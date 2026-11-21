@@ -46,7 +46,8 @@ npm run test:e2e
   locations, and functions are optional; missing reference text is presented
   as unavailable rather than invented.
 - The 3D viewport is loaded as a separate JavaScript module. Parsed model
-  geometries and materials are disposed when the viewport is removed.
+  geometries, materials, and textures are disposed when the viewport is
+  removed.
 - The current runtime still fetches individual OBJ files and parses them on the
   main thread. The six-mesh prototype has not been benchmarked for large
   catalogs; worker-based parsing, progressive asset loading, and accelerated

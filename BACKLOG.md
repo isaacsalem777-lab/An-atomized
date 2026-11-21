@@ -16,8 +16,9 @@ reorder priorities; explain any reprioritization in the note below.
   relationship targets. Optional reference content is shown as unavailable
   when absent; the six current records remain the only anatomy data.
 - Asset loading/recovery and interaction controls are implemented for the
-  current six meshes. Parsed GPU geometry and materials are disposed when the
-  viewport is removed; WebGL support is determined by the actual renderer.
+  current six meshes. Parsed GPU geometries, materials, and textures are
+  disposed when the viewport is removed; WebGL support is determined by the
+  actual renderer.
 - The six bundled OBJ files total 2,332,482 bytes (about 2.33 MB) and load as
   separate requests; parsing runs on the main thread.
 - The viewport is a lazy JavaScript chunk: the application entry is 167.57 kB
