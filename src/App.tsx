@@ -13,7 +13,9 @@ export default function App() {
   const [system, setSystem] = useState('Skeletal')
   const [region, setRegion] = useState('Cranium')
   const [difficulty, setDifficulty] = useState('Intermediate')
-  const [selected, setSelected] = useState(structures[0])
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const selected = structures.find(structure => structure.id === selectedId)
+  const selectStructure = (id: string | null) => setSelectedId(current => current === id ? null : id)
   const [showInfo, setShowInfo] = useState(true)
   const [mobileNav, setMobileNav] = useState(false)
   const [answered, setAnswered] = useState(false)
@@ -39,7 +41,7 @@ export default function App() {
         <div className="workspace-grid">
           <div className="center-column">
             <div className="toolbar"><div className="toolbar-selects"><label><span>SYSTEM</span><div className="select-wrap"><Atom size={14}/><select value={system} onChange={e => setSystem(e.target.value)}>{systems.map(s => <option key={s}>{s}</option>)}</select><ChevronDown size={13}/></div></label><label><span>REGION</span><div className="select-wrap"><select value={region} onChange={e => setRegion(e.target.value)}>{regions.map(r => <option key={r}>{r}</option>)}</select><ChevronDown size={13}/></div></label></div><button className="tool-button" onClick={() => setShowInfo(v => !v)}><Layers size={15}/><span>{showInfo ? 'HIDE' : 'SHOW'} DETAILS</span></button></div>
-            <Viewport system={system} region={region} challenge={tab === 'Challenge'} selectedName={selected.name} onSelect={(name) => { const match = structures.find(s => s.name === name); if (match) setSelected(match) }}/>
+            <Viewport system={system} region={region} challenge={tab === 'Challenge'} selectedId={selectedId} onSelect={selectStructure}/>
             <div className="below-viewport"><div className="stat-tile"><div className="stat-icon"><Target size={16}/></div><div><span>SESSION ACCURACY</span><strong>94.0<small>%</small></strong></div><div className="stat-trend">+2.4%</div></div><div className="stat-tile"><div className="stat-icon"><Trophy size={16}/></div><div><span>BEST STREAK</span><strong>37</strong></div><div className="stat-muted">PERSONAL</div></div><div className="stat-tile"><div className="stat-icon"><Clock3 size={16}/></div><div><span>AVERAGE TIME</span><strong>3.86<small>s</small></strong></div><div className="stat-muted">ALL-TIME</div></div></div>
           </div>
 
@@ -51,12 +53,15 @@ export default function App() {
               <div className="panel-section"><div className="field-label">SESSION PARAMETERS</div><div className="parameter-row"><span>Questions</span><strong>20 structures</strong></div><div className="parameter-row"><span>Time limit</span><strong>Untimed practice</strong></div><div className="parameter-row"><span>Feedback</span><strong>Immediate</strong></div></div>
               <div className="challenge-start"><button onClick={() => setAnswered(false)} className="start-button"><span>START CHALLENGE</span><ChevronRight size={17}/></button><div className="start-note"><ShieldCheck size={13}/> RESULTS SAVED TO PERSONAL RECORDS</div></div>
             </> : <>
-              <div className="panel-header"><div><div className="panel-overline">STRUCTURE REFERENCE</div><h2>{selected.name}</h2></div><button className="panel-more"><Search size={16}/></button></div>
-              <div className="structure-tags"><span>{selected.system}</span><span>{selected.region}</span></div>
-              <div className="panel-section"><div className="field-label">OVERVIEW</div><p className="info-copy">{selected.detail}</p></div>
-              <div className="panel-section"><div className="field-label">LOCATION</div><p className="info-copy">{selected.location}</p></div>
-              <div className="panel-section"><div className="field-label">FUNCTION</div><p className="info-copy">{selected.function}</p></div>
-              <div className="panel-section"><div className="field-label">QUICK STRUCTURE INDEX</div>{structures.map(s => <button key={s.name} className={`structure-row ${selected.name === s.name ? 'current' : ''}`} onClick={() => setSelected(s)}><span>{s.name}</span><ChevronRight size={14}/></button>)}</div>
+              <div className="panel-header"><div><div className="panel-overline">STRUCTURE REFERENCE</div><h2>{selected?.name ?? 'Select a bone'}</h2></div><button className="panel-more"><Search size={16}/></button></div>
+              {selected ? <>
+                <div className="structure-tags"><span>{selected.system}</span><span>{selected.region}</span></div>
+                <div className="panel-section"><div className="field-label">ANATOMY IDENTIFIERS</div><p className="info-copy">FMA: {selected.fmaId}<br/>BodyParts3D mesh: {selected.meshId}</p></div>
+                <div className="panel-section"><div className="field-label">OVERVIEW</div><p className="info-copy">{selected.detail}</p></div>
+                <div className="panel-section"><div className="field-label">LOCATION</div><p className="info-copy">{selected.location}</p></div>
+                <div className="panel-section"><div className="field-label">FUNCTION</div><p className="info-copy">{selected.function}</p></div>
+              </> : <div className="panel-section"><div className="field-label">NO STRUCTURE SELECTED</div><p className="info-copy">Select a bone in the 3D model or choose one from the index below.</p></div>}
+              <div className="panel-section"><div className="field-label">QUICK STRUCTURE INDEX</div>{structures.map(s => <button key={s.id} className={`structure-row ${selected?.id === s.id ? 'current' : ''}`} onClick={() => selectStructure(s.id)}><span>{s.name}</span><ChevronRight size={14}/></button>)}</div>
             </>}
           </aside>}
         </div>

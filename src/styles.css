@@ -13,6 +13,7 @@
 /* Stage 2: live WebGL viewport */
 .three-stage{touch-action:none;background:radial-gradient(ellipse at 50% 48%,#263a40 0,#14232a 38%,#0b1318 78%)}
 .three-stage canvas{position:absolute!important;inset:0;width:100%!important;height:100%!important;display:block}
+.bodyparts-label{left:12px;top:12%}
 .asset-live{color:#8fc6a9}.asset-live i{background:#80c1a5}
 .loading-model{font:10px var(--mono);letter-spacing:.08em;color:#b9d5d2}
 .orbit-indicator{display:grid;place-items:center;color:#91b9b9;padding:0 5px}

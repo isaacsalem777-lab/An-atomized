@@ -1,0 +1,7 @@
+BodyParts3D, © The Database Center for Life Science licensed under CC Attribution 4.0 International.
+
+License: https://creativecommons.org/licenses/by/4.0/
+Dataset: BodyParts3D, release 4.0
+Included source meshes: FJ3200, FJ3287, FJ3392, FJ3269, FJ3375, FJ3289
+
+The OBJ source geometry files are unmodified. The application centers, rotates, and scales them at render time.
