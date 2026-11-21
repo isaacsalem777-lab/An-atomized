@@ -197,5 +197,5 @@ export function createAnatomyCatalog(records: readonly AnatomyStructure[]): Anat
 
 export const anatomyCatalog = createAnatomyCatalog(structures)
 
-export const systems = ['Skeletal', 'Muscular', 'Nervous', 'Cardiovascular', 'Organs']
+export const systems = ['All systems', 'Skeletal', 'Muscular', 'Nervous', 'Cardiovascular', 'Organs']
 export const regions = ['Whole body', 'Cranium', 'Thorax', 'Vertebral column', 'Pelvis', 'Upper extremity']

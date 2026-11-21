@@ -12,6 +12,11 @@ type Props = {
   challenge: boolean
   selectedId: AnatomyId | null
   onSelect: (id: AnatomyId | null) => void
+  visibleStructureIds: ReadonlySet<AnatomyId>
+  matchedStructureCount: number
+  hiddenCount: number
+  isolationId: AnatomyId | null
+  transparencyById: Partial<Record<AnatomyId, number>>
 }
 
 type MeshAssetState =
@@ -31,6 +36,7 @@ type BoneProps = {
   selectedId: AnatomyId | null
   onSelect: (id: AnatomyId) => void
   wire: boolean
+  transparency: number
 }
 
 type AssetLoaderProps = {
@@ -196,7 +202,7 @@ function CameraDistance({ distance }: { distance: number }) {
   return null
 }
 
-function Bone({ structure, association, source, selectedId, onSelect, wire }: BoneProps) {
+function Bone({ structure, association, source, selectedId, onSelect, wire, transparency }: BoneProps) {
   const [hovered, setHovered] = useState(false)
   const active = selectedId === structure.id
   const { object, materials } = useMemo(() => {
@@ -240,13 +246,19 @@ function Bone({ structure, association, source, selectedId, onSelect, wire }: Bo
     materials.forEach((material) => {
       material.color.set(active ? '#9dd8d3' : hovered ? '#d9e5dd' : '#c5c9bd')
       material.emissive.set(active ? '#245e5b' : '#000000')
-      material.emissiveIntensity = active ? 0.55 : 0
+      material.emissiveIntensity = active ? transparency <= 40 ? 0.9 : 0.55 : 0
+      material.opacity = transparency / 100
+      material.depthWrite = transparency === 100
+      if (material.transparent !== (transparency < 100)) {
+        material.transparent = transparency < 100
+        material.needsUpdate = true
+      }
       if (material.wireframe !== wire) {
         material.wireframe = wire
         material.needsUpdate = true
       }
     })
-  }, [active, hovered, materials, wire])
+  }, [active, hovered, materials, transparency, wire])
 
   return <group
     name={association.id}
@@ -269,7 +281,7 @@ function Bone({ structure, association, source, selectedId, onSelect, wire }: Bo
 }
 
 function SkullModel({ models, selectedId, onSelect, wire }: {
-  models: { structure: AnatomyStructure; association: MeshAssociation; model: THREE.Group }[]
+  models: { structure: AnatomyStructure; association: MeshAssociation; model: THREE.Group; transparency: number }[]
   selectedId: AnatomyId | null
   onSelect: (id: AnatomyId) => void
   wire: boolean
@@ -277,7 +289,7 @@ function SkullModel({ models, selectedId, onSelect, wire }: {
   // Convert the source's Z-up millimeter coordinates to the scene's Y-up centimeter scale.
   return <group scale={0.01} rotation={[-Math.PI / 2, 0, 0]}>
     <group position={sourceOffset}>
-      {models.map(({ structure, association, model }) => <Bone
+      {models.map(({ structure, association, model, transparency }) => <Bone
         key={association.id}
         structure={structure}
         association={association}
@@ -285,6 +297,7 @@ function SkullModel({ models, selectedId, onSelect, wire }: {
         selectedId={selectedId}
         onSelect={onSelect}
         wire={wire}
+        transparency={transparency}
       />)}
     </group>
   </group>
@@ -301,7 +314,18 @@ function failureLabel(state: MeshAssetState) {
   return 'Network error'
 }
 
-export default function Viewport({ system, region, challenge, selectedId, onSelect }: Props) {
+export default function Viewport({
+  system,
+  region,
+  challenge,
+  selectedId,
+  onSelect,
+  visibleStructureIds,
+  matchedStructureCount,
+  hiddenCount,
+  isolationId,
+  transparencyById,
+}: Props) {
   const [wire, setWire] = useState(false)
   const [labels, setLabels] = useState(true)
   const [resetKey, setResetKey] = useState(0)
@@ -322,18 +346,21 @@ export default function Viewport({ system, region, challenge, selectedId, onSele
 
   useEffect(() => setWebgl(detectWebGL2()), [])
 
-  const readyModels = Object.entries(assetStates).flatMap(([associationId, state]) => {
+  const loadedModels = Object.entries(assetStates).flatMap(([associationId, state]) => {
     const record = anatomyCatalog.meshAssociationsById.get(associationId)
     return state.status === 'ready' && record
       ? [{ ...record, model: state.model }]
       : []
   })
+  const readyModels = loadedModels
+    .filter(({ structure }) => visibleStructureIds.has(structure.id))
+    .map(record => ({ ...record, transparency: transparencyById[record.structure.id] ?? 100 }))
   const failures = Array.from(anatomyCatalog.meshAssociationsById.values()).flatMap((record) => {
     const state = assetStates[record.association.id]
     return isFailure(state) ? [{ ...record, state }] : []
   })
   const pendingCount = Object.values(assetStates).filter((state) => state.status === 'idle' || state.status === 'loading').length
-  const readyCount = readyModels.length
+  const readyCount = loadedModels.length
   const meshCount = anatomyCatalog.meshAssociationsById.size
   const topStatus = webgl.status === 'checking'
     ? 'CHECKING WEBGL 2'
@@ -372,9 +399,17 @@ export default function Viewport({ system, region, challenge, selectedId, onSele
       className="model-stage three-stage"
       data-webgl-state={webgl.status}
       data-ready-count={readyCount}
+      data-visible-count={visibleStructureIds.size}
+      data-selected-id={selectedId ?? ''}
+      data-isolation-id={isolationId ?? ''}
       data-model-ready={webgl.status === 'available' && readyCount === meshCount}
     >
       <div className="stage-grid" />
+      {isolationId && <div className="scene-mode-indicator" role="status">ISOLATED · {anatomyCatalog.structuresById.get(isolationId)?.name}</div>}
+      {!isolationId && hiddenCount > 0 && <div className="scene-mode-indicator scene-hidden-indicator" role="status">{hiddenCount} STRUCTURE{hiddenCount === 1 ? '' : 'S'} HIDDEN</div>}
+      {webgl.status === 'available' && visibleStructureIds.size === 0 && <div className="model-filter-empty" role="status">
+        {matchedStructureCount === 0 ? 'No structures match the selected filters.' : 'All matching structures are hidden.'}
+      </div>}
       {webgl.status === 'available' ? <>
         {Array.from(anatomyCatalog.meshAssociationsById.values(), ({ association }) => <AssetLoader
           key={association.id}
