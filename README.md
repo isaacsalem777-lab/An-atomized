@@ -14,6 +14,19 @@ npm run dev
 ```
 Open the local URL printed by Vite (normally http://localhost:5173).
 
+## Checks
+Run the TypeScript check and production build with:
+```bash
+npm run typecheck
+npm run build
+```
+
+The browser smoke tests use Playwright and Chromium. Install the browser once with
+`npx playwright install chromium`, then run:
+```bash
+npm run test:e2e
+```
+
 ## What's new in Stage 2
 - Replaced the SVG illustration with a real Three.js / React Three Fiber 3D scene.
 - Orbit the skull with left-click drag, zoom with the mouse wheel, and pan with right-click drag.
