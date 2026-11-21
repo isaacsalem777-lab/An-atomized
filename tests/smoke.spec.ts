@@ -11,7 +11,7 @@ const representativeStructures = [
   { name: 'Right lower costal cartilages', anatomyId: 'anatomy:skeleton:bodyparts3d-bp28', sourceId: 'right-lower-costal-cartilages', externalLabel: 'BodyParts3D: BP28' },
 ]
 
-test('loads and selects source structures across the full skeleton', async ({ page }) => {
+test('loads and selects source structures across the catalog', async ({ page }) => {
   await page.route('**/skeleton.glb', async route => {
     await new Promise(resolve => setTimeout(resolve, 400))
     await route.continue()

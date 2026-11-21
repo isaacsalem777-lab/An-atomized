@@ -440,7 +440,7 @@ export default function Viewport({
       : failures.length > 0
         ? failureLabel(assetState)
         : pendingCount > 0
-          ? 'Loading full skeleton model'
+          ? 'Loading skeleton model'
           : `BodyParts3D · ${structureCount} structures`
   const retryFailedAsset = () => setRetryVersion(version => version + 1)
   const adjustZoom = (amount: number) => {
@@ -547,7 +547,7 @@ export default function Viewport({
       {showLoadStatus && failures.length === 0 && <span className="model-status" role="status">Loading the skeleton model and validating all {structureCount} structures.</span>}
       {showLoadStatus && failures.length > 0 && <div className="model-status model-status-error" role="alert">
         <span>
-          The full skeleton model could not be loaded. {failureLabel(assetState)}: {assetState.status === 'missing' || assetState.status === 'invalid' || assetState.status === 'network-error' ? assetState.message : ''}
+          The skeleton model could not be loaded. {failureLabel(assetState)}: {assetState.status === 'missing' || assetState.status === 'invalid' || assetState.status === 'network-error' ? assetState.message : ''}
         </span>
         <button className="tool-button" onClick={retryFailedAsset}>Retry loading model</button>
       </div>}
