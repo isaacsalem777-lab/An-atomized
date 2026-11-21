@@ -223,8 +223,8 @@ function Bone({ structure, association, source, selectedId, onSelect, wire, tran
       if (!(child instanceof THREE.Mesh)) return
 
       const material = new THREE.MeshStandardMaterial({
-        color: '#c5c9bd',
-        roughness: 0.82,
+        color: '#d8dcd5',
+        roughness: 0.76,
         side: THREE.DoubleSide,
       })
       child.name = association.id
@@ -241,9 +241,9 @@ function Bone({ structure, association, source, selectedId, onSelect, wire, tran
   useEffect(() => () => materials.forEach((material) => material.dispose()), [materials])
   useEffect(() => {
     materials.forEach((material) => {
-      material.color.set(active ? '#9dd8d3' : hovered ? '#d9e5dd' : '#c5c9bd')
-      material.emissive.set(active ? '#245e5b' : '#000000')
-      material.emissiveIntensity = active ? transparency <= 40 ? 0.9 : 0.55 : 0
+      material.color.set(active ? '#a9eff1' : hovered ? '#f0f4fa' : '#d8dcd5')
+      material.emissive.set(active ? '#154a52' : '#000000')
+      material.emissiveIntensity = active ? transparency <= 40 ? 0.7 : 0.42 : 0
       material.opacity = transparency / 100
       material.depthWrite = transparency === 100
       if (material.transparent !== (transparency < 100)) {
@@ -356,14 +356,14 @@ export default function Viewport({
   const readyCount = loadedModels.length
   const meshCount = anatomyCatalog.meshAssociationsById.size
   const topStatus = webgl.status === 'checking'
-    ? 'CHECKING WEBGL 2'
+    ? 'Checking WebGL 2'
     : webgl.status === 'unavailable'
-      ? '3D RENDERING UNAVAILABLE'
+      ? '3D rendering unavailable'
       : failures.length > 0
-        ? `${readyCount}/${meshCount} MESHES · ${failures.length} FAILED`
+        ? `${readyCount} of ${meshCount} meshes · ${failures.length} failed`
         : pendingCount > 0
-          ? `LOADING MODELS ${readyCount}/${meshCount}`
-          : `BODY PARTS3D · ${meshCount} SEGMENTS`
+          ? `Loading models ${readyCount}/${meshCount}`
+          : `BodyParts3D · ${meshCount} segments`
   const retryFailedAssets = () => {
     setRetryVersions((current) => {
       const next = { ...current }
@@ -401,9 +401,16 @@ export default function Viewport({
       data-camera-distance={zoom}
       data-model-ready={webgl.status === 'available' && readyCount === meshCount}
     >
-      <div className="stage-grid" />
-      {isolationId && <div className="scene-mode-indicator" role="status">ISOLATED · {anatomyCatalog.structuresById.get(isolationId)?.name}</div>}
-      {!isolationId && hiddenCount > 0 && <div className="scene-mode-indicator scene-hidden-indicator" role="status">{hiddenCount} STRUCTURE{hiddenCount === 1 ? '' : 'S'} HIDDEN</div>}
+      <div className="atrium-environment" aria-hidden="true">
+        <div className="atrium-ceiling"/>
+        <div className="atrium-wall-left"/>
+        <div className="atrium-wall-right"/>
+        <div className="atrium-floor"><div className="atrium-floor-lines"/></div>
+        <div className="atrium-seam atrium-seam-left"/>
+        <div className="atrium-seam atrium-seam-right"/>
+      </div>
+      {isolationId && <div className="scene-mode-indicator" role="status">Isolated: {anatomyCatalog.structuresById.get(isolationId)?.name}</div>}
+      {!isolationId && hiddenCount > 0 && <div className="scene-mode-indicator scene-hidden-indicator" role="status">{hiddenCount} structure{hiddenCount === 1 ? '' : 's'} hidden</div>}
       {webgl.status === 'available' && visibleStructureIds.size === 0 && <div className="model-filter-empty" role="status">
         {matchedStructureCount === 0 ? 'No structures match the selected filters.' : 'All matching structures are hidden.'}
       </div>}
@@ -428,21 +435,17 @@ export default function Viewport({
             gl={{ antialias: true, alpha: true }}
             onPointerMissed={() => onSelect(null)}
           >
-            <color attach="background" args={['#0c141a']} />
-            <ambientLight intensity={1.25}/>
-            <directionalLight position={[4,5,6]} intensity={2.3} color="#e2f0e8"/>
-            <directionalLight position={[-4,1,3]} intensity={1.1} color="#78b6bd"/>
-            <pointLight position={[0,-2,4]} intensity={0.65} color="#d3c6a8"/>
+            <hemisphereLight color="#f0f4fa" groundColor="#172238" intensity={1.05}/>
+            <ambientLight intensity={0.5}/>
+            <directionalLight position={[4,5,6]} intensity={2.15} color="#f0f4fa"/>
+            <directionalLight position={[-4,1,3]} intensity={0.7} color="#7899ff"/>
+            <pointLight position={[0,-2,4]} intensity={0.42} color="#4ed7e5"/>
             <CameraDistance key={`camera-${resetKey}`} distance={zoom}/>
             <SkullModel models={readyModels} selectedId={selectedId} onSelect={onSelect} wire={wire}/>
             <OrbitControls key={`controls-${resetKey}`} makeDefault enableDamping dampingFactor={0.08} minDistance={3.1} maxDistance={8.5} target={[0,0,0]} />
           </Canvas>
         </RendererErrorBoundary>
-        {labels && <div className="model-label bodyparts-label"><span/> SEGMENTED BONES</div>}
-        <div className="viewport-caption">
-          <span title={attribution}>BodyParts3D · CC BY 4.0</span>
-          <span>Six-bone skull subset · not a complete skull or full-body model</span>
-        </div>
+        {labels && <div className="model-label bodyparts-label"><span/> Six skull bones</div>}
         <div className="view-controls">
           <button aria-label="Reset camera" onClick={() => {setResetKey(value => value + 1); setZoom(4.7)}} title="Reset camera"><RotateCcw size={15}/></button>
           <span className="control-divider"/>
@@ -457,6 +460,10 @@ export default function Viewport({
     <div className={`viewport-footer ${showLoadStatus || webgl.status !== 'available' ? 'viewport-footer-status' : ''}`}>
       {webgl.status === 'checking' && <span className="model-status" role="status">Checking WebGL 2 support…</span>}
       {webgl.status === 'unavailable' && <span className="model-status" role="status">The 3D viewport is unavailable.</span>}
+      {webgl.status === 'available' && <div className="viewport-caption">
+        <span title={attribution}>BodyParts3D · CC BY 4.0</span>
+        <span>Six-bone skull subset · not a complete skull or full-body model</span>
+      </div>}
       {showLoadStatus && failures.length === 0 && <span className="model-status" role="status">Loading anatomical meshes: {readyCount} of {meshCount} ready.</span>}
       {showLoadStatus && failures.length > 0 && <div className="model-status model-status-error" role="alert">
         <span>
@@ -472,7 +479,7 @@ export default function Viewport({
         <button className="tool-button" onClick={retryFailedAssets}>Retry failed meshes</button>
       </div>}
       {webgl.status === 'available' && !showLoadStatus && <>
-        <span><kbd>DRAG</kbd> ORBIT</span><span><kbd>SCROLL</kbd> ZOOM</span><span><kbd>RIGHT DRAG</kbd> PAN</span><span className="footer-right">CAMERA · ORBIT CONTROLS</span>
+        <span className="viewport-hint"><kbd>DRAG</kbd> ORBIT</span><span className="viewport-hint"><kbd>SCROLL</kbd> ZOOM</span><span className="viewport-hint"><kbd>RIGHT DRAG</kbd> PAN</span><span className="footer-right">CAMERA · ORBIT CONTROLS</span>
       </>}
     </div>
   </section>

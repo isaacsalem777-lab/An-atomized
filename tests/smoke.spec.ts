@@ -2,8 +2,8 @@ import { expect, test } from '@playwright/test'
 
 const structures = [
   { name: 'Frontal bone', anatomyId: 'anatomy:bone:frontal', fmaId: 'FMA52734', meshId: 'FJ3200', x: 0.5, y: 0.34 },
-  { name: 'Left zygomatic bone', anatomyId: 'anatomy:bone:zygomatic:left', fmaId: 'FMA52893', meshId: 'FJ3287', x: 0.64, y: 0.53 },
-  { name: 'Right zygomatic bone', anatomyId: 'anatomy:bone:zygomatic:right', fmaId: 'FMA52892', meshId: 'FJ3392', x: 0.36, y: 0.53 },
+  { name: 'Left zygomatic bone', anatomyId: 'anatomy:bone:zygomatic:left', fmaId: 'FMA52893', meshId: 'FJ3287', x: 0.58, y: 0.54 },
+  { name: 'Right zygomatic bone', anatomyId: 'anatomy:bone:zygomatic:right', fmaId: 'FMA52892', meshId: 'FJ3392', x: 0.42, y: 0.54 },
   { name: 'Left maxilla', anatomyId: 'anatomy:bone:maxilla:left', fmaId: 'FMA53650', meshId: 'FJ3269', x: 0.55, y: 0.65 },
   { name: 'Right maxilla', anatomyId: 'anatomy:bone:maxilla:right', fmaId: 'FMA53649', meshId: 'FJ3375', x: 0.45, y: 0.65 },
   { name: 'Mandible', anatomyId: 'anatomy:bone:mandible', fmaId: 'FMA52748', meshId: 'FJ3289', x: 0.5, y: 0.8 },
@@ -53,10 +53,13 @@ test('selection, camera controls, and viewport toggles respond to input', async 
 
   const canvas = page.locator('.viewport canvas')
   await expect(page.locator('.model-stage')).toHaveAttribute('data-model-ready', 'true')
+  await canvas.scrollIntoViewIfNeeded()
   const canvasBounds = await canvas.boundingBox()
   if (!canvasBounds) {
     throw new Error('The 3D canvas has no visible bounds')
   }
+  await page.mouse.move(canvasBounds.x + canvasBounds.width / 2, canvasBounds.y + canvasBounds.height * 0.8)
+  await expect.poll(() => page.evaluate(() => document.body.style.cursor)).toBe('pointer')
   await canvas.click({ position: { x: canvasBounds.width / 2, y: canvasBounds.height * 0.8 } })
   await expect(page.locator('.model-stage')).toHaveAttribute('data-selected-id', 'anatomy:bone:mandible')
   await expect(page.locator('.right-panel h2')).toHaveText('Mandible')
@@ -96,7 +99,7 @@ test('navigation adapts between desktop and mobile layouts', async ({ page }) =>
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.goto('/')
   await expect(page.locator('.sidebar')).toBeVisible()
-  await expect(page.locator('.mobile-menu')).toBeHidden()
+  await expect(page.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible()
   const desktopCenter = await page.locator('.center-column').boundingBox()
   const desktopPanel = await page.locator('.right-panel').boundingBox()
   if (!desktopCenter || !desktopPanel) {
@@ -105,13 +108,10 @@ test('navigation adapts between desktop and mobile layouts', async ({ page }) =>
   expect(desktopPanel.x).toBeGreaterThan(desktopCenter.x)
 
   await page.setViewportSize({ width: 390, height: 844 })
-  await expect(page.locator('.mobile-menu')).toBeVisible()
-  await page.locator('.mobile-menu').click()
-  await expect(page.locator('.sidebar')).toHaveClass(/mobile-open/)
-
+  await expect(page.locator('.sidebar')).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button')).toHaveCount(3)
   await page.getByRole('button', { name: 'Explore', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Explore anatomy' })).toBeVisible()
-  await expect(page.locator('.sidebar')).not.toHaveClass(/mobile-open/)
   const mobileCenter = await page.locator('.center-column').boundingBox()
   const mobilePanel = await page.locator('.right-panel').boundingBox()
   if (!mobileCenter || !mobilePanel) {

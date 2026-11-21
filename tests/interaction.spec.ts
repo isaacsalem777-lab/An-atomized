@@ -104,7 +104,7 @@ test('adjusts transparency while retaining selection on a transparent 3D structu
 test('keeps reference controls usable and the layout within mobile width', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
-  await page.getByRole('button', { name: 'Open menu' }).click()
+  await expect(page.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible()
   await page.getByRole('button', { name: 'Explore', exact: true }).click()
   await expect(page.locator('.model-stage')).toHaveAttribute('data-model-ready', 'true')
   await page.getByRole('button', { name: 'Select Left zygomatic bone' }).click()

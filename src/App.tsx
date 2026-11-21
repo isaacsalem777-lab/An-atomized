@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import {
-  Activity,
   ChartNoAxesColumnIncreasing,
   ChevronDown,
   ChevronRight,
@@ -9,17 +8,17 @@ import {
   Eye,
   EyeOff,
   Layers,
-  Menu,
   Search,
   Target,
   X,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import Viewport from './components/Viewport'
 import { anatomyCatalog, structures, type AnatomyId } from './data/anatomy'
 
 type Tab = 'Explore' | 'Challenge' | 'Progress'
 
-const nav: { name: Tab; icon: typeof Activity }[] = [
+const nav: { name: Tab; icon: LucideIcon }[] = [
   { name: 'Explore', icon: Compass },
   { name: 'Challenge', icon: Target },
   { name: 'Progress', icon: ChartNoAxesColumnIncreasing },
@@ -44,7 +43,6 @@ export default function App() {
   const [isolationId, setIsolationId] = useState<AnatomyId | null>(null)
   const [transparencyById, setTransparencyById] = useState<Partial<Record<AnatomyId, number>>>({})
   const [showInfo, setShowInfo] = useState(true)
-  const [mobileNav, setMobileNav] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -99,37 +97,31 @@ export default function App() {
   }
 
   return <div className="app-shell">
-    {mobileNav && <button className="nav-backdrop" aria-label="Close navigation" onClick={() => setMobileNav(false)}/>}
-    <aside className={`sidebar ${mobileNav ? 'mobile-open' : ''}`}>
+    <aside className="sidebar">
       <div className="brand">
-        <div className="brand-mark"><Activity size={20}/></div>
-        <div>
-          <div className="brand-name">ANATOMY</div>
-          <div className="brand-sub">ANATOMY EXPLORER</div>
-        </div>
-        <button className="mobile-close" aria-label="Close menu" onClick={() => setMobileNav(false)}><X size={18}/></button>
+        <div className="brand-mark" aria-hidden="true"><span/><span/><span/></div>
+        <span className="brand-name">ANATOMY</span>
       </div>
       <nav className="main-nav" aria-label="Primary navigation">
         {nav.map(({ name, icon: Icon }) => <button
           key={name}
           className={`nav-item ${tab === name ? 'selected' : ''}`}
           aria-current={tab === name ? 'page' : undefined}
-          onClick={() => {setTab(name); setMobileNav(false)}}
+          onClick={() => setTab(name)}
         >
           <Icon size={18}/><span>{name}</span>
         </button>)}
       </nav>
       <div className="sidebar-note">
-        <span className="sidebar-note-label">CURRENT MODEL</span>
-        <strong>Six skull bones</strong>
-        <span>Partial skull subset</span>
+        <span className="sidebar-note-label">MODEL</span>
+        <strong>6 bones</strong>
+        <span>Skull subset</span>
       </div>
     </aside>
 
     <main className="main-area">
       <header className="topbar">
         <div className="topbar-left">
-          <button className="mobile-menu" aria-label="Open menu" aria-expanded={mobileNav} onClick={() => setMobileNav(true)}><Menu size={20}/></button>
           <div className="breadcrumb"><span>ANATOMY</span><ChevronRight size={14}/><strong>{tab}</strong></div>
         </div>
         <button className="top-icon" aria-label="Help" title="Help" onClick={() => setHelpOpen(true)}><CircleHelp size={19}/></button>
@@ -138,11 +130,11 @@ export default function App() {
       <div className={`page-content ${tab === 'Explore' ? 'explore-page' : 'future-page'}`}>
         <div className="page-heading">
           <div>
-            <p className="eyebrow">{tab === 'Explore' ? 'INTERACTIVE ANATOMY' : 'COMING LATER'}</p>
+            <p className="eyebrow">{tab === 'Explore' ? 'Interactive anatomy' : 'Coming later'}</p>
             <h1>{tab === 'Explore' ? 'Explore anatomy' : tab}</h1>
             <p className="page-description">
               {tab === 'Explore'
-                ? 'Explore six individually selectable bones from a partial skull model. This is not a complete skull or full human anatomy.'
+                ? 'Explore six selectable bones in a partial skull—not a complete skull or full human anatomy.'
                 : tab === 'Challenge'
                   ? 'Identification challenges are not available yet.'
                   : 'Progress tracking is not available yet.'}
@@ -195,7 +187,7 @@ export default function App() {
           {showInfo && <aside className="right-panel" aria-label="Anatomy reference">
             <div className="panel-header">
               <div>
-                <p className="panel-overline">ANATOMY REFERENCE</p>
+                <p className="panel-overline">Anatomy reference</p>
                 <h2>{selected?.name ?? 'Select a structure'}</h2>
               </div>
               <button
@@ -303,7 +295,7 @@ export default function App() {
           </aside>}
         </div> : <section className="future-state" aria-labelledby="future-state-title">
           <div className="future-state-icon">{tab === 'Challenge' ? <Target size={24}/> : <ChartNoAxesColumnIncreasing size={24}/>}</div>
-          <p className="future-state-label">NOT AVAILABLE YET</p>
+          <p className="future-state-label">Not available yet</p>
           <h2 id="future-state-title">{tab === 'Challenge' ? 'Challenge sessions are not available yet' : 'Progress tracking is not available yet'}</h2>
           <p>
             {tab === 'Challenge'
@@ -320,7 +312,7 @@ export default function App() {
     {helpOpen && <div className="help-dialog-backdrop" onClick={() => setHelpOpen(false)}>
       <section className="help-dialog" role="dialog" aria-modal="true" aria-labelledby="help-title" onClick={event => event.stopPropagation()} onKeyDown={event => {if(event.key === 'Escape') setHelpOpen(false)}}>
         <div className="help-dialog-header">
-          <div><p className="panel-overline">ANATOMY EXPLORER</p><h2 id="help-title">Using the anatomy viewer</h2></div>
+          <div><p className="panel-overline">Anatomy explorer</p><h2 id="help-title">Using the anatomy viewer</h2></div>
           <button className="panel-icon-button" aria-label="Close help" autoFocus onClick={() => setHelpOpen(false)}><X size={18}/></button>
         </div>
         <p>Select a structure in the model or index to view its reference information. Search by name, anatomy ID, or source mesh ID.</p>

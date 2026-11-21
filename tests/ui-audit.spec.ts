@@ -13,9 +13,11 @@ test('Explore is the honest default and fabricated dashboard content is absent',
   await expect(page.getByRole('button', { name: 'Systems & regions' })).toHaveCount(0)
   await expect(page.locator('.stat-tile')).toHaveCount(0)
   await expect(page.locator('.system-status, .profile-card, .session-chip')).toHaveCount(0)
-  await expect(page.locator('.page-content')).toContainText('six individually selectable bones')
+  await expect(page.locator('.page-content')).toContainText('six selectable bones')
   await expect(page.locator('.page-content')).toContainText('not a complete skull or full human anatomy')
   await expect(page.locator('.viewport-caption')).toContainText('Six-bone skull subset')
+  await expect(page.locator('.atrium-environment')).toHaveAttribute('aria-hidden', 'true')
+  expect(await page.locator('.atrium-environment').evaluate(element => getComputedStyle(element).pointerEvents)).toBe('none')
 })
 
 test('Challenge and Progress explain their real availability without fake metrics', async ({ page }) => {
@@ -80,15 +82,24 @@ test('filters reflect only catalog anatomy and mobile navigation remains usable 
   await page.getByLabel('Region filter').selectOption('Cranium')
   await expect(page.locator('.model-stage')).toHaveAttribute('data-visible-count', '6')
 
-  await page.getByRole('button', { name: 'Open menu' }).click()
-  await expect(page.locator('.sidebar')).toHaveClass(/mobile-open/)
+  await expect(page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button')).toHaveCount(3)
   await page.getByRole('button', { name: 'Progress', exact: true }).click()
-  await expect(page.locator('.sidebar')).not.toHaveClass(/mobile-open/)
   await expect(page.getByRole('heading', { name: 'Progress tracking is not available yet' })).toBeVisible()
 
-  await page.getByRole('button', { name: 'Open menu' }).click()
   await page.getByRole('button', { name: 'Challenge', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Challenge sessions are not available yet' })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
   expect(browserErrors).toEqual([])
+})
+
+test('keeps keyboard focus visible and honors reduced-motion preferences', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/')
+
+  const explore = page.getByRole('button', { name: 'Explore', exact: true })
+  await page.keyboard.press('Tab')
+  await expect(explore).toBeFocused()
+  await expect(explore).toHaveCSS('outline-style', 'solid')
+  await expect(explore).toHaveCSS('transition-duration', '0s')
 })
