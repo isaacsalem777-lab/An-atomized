@@ -51,8 +51,18 @@ test('validates anatomy ID namespaces, mesh association uniqueness, and relation
 
   const frontalBone = anatomyCatalog.structuresById.get(anatomyIds.frontalBone)
   if (!frontalBone) throw new Error('Frontal bone record is missing')
+  const mandible = anatomyCatalog.structuresById.get(anatomyIds.mandible)
+  if (!mandible) throw new Error('Mandible record is missing')
   const association = frontalBone.meshAssociations[0]
   if (!association) throw new Error('Frontal bone mesh association is missing')
+
+  const duplicateExternalIdentifier = {
+    ...mandible,
+    externalIds: frontalBone.externalIds,
+  }
+  expect(() => createAnatomyCatalog([frontalBone, duplicateExternalIdentifier])).toThrow(
+    'Duplicate external identifier "FMA:FMA52734"',
+  )
 
   const duplicateAssociation = {
     ...frontalBone,

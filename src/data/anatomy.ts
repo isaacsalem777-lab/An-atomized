@@ -185,6 +185,7 @@ export const structures: readonly AnatomyStructure[] = [
 export function createAnatomyCatalog(records: readonly AnatomyStructure[]): AnatomyCatalog {
   const structuresById = new Map<AnatomyId, AnatomyStructure>()
   const meshAssociationsById = new Map<string, MeshAssociationRecord>()
+  const externalIdentifiers = new Map<string, AnatomyId>()
   const validLateralities = new Set<string>(['left', 'right', 'midline', 'unpaired'])
   const validMeshFormats = new Set<string>(['obj', 'glb', 'gltf', 'fbx'])
   const requireText = (value: string, field: string) => {
@@ -206,15 +207,17 @@ export function createAnatomyCatalog(records: readonly AnatomyStructure[]): Anat
     }
     structuresById.set(structure.id, structure)
 
-    const externalIdentifiers = new Set<string>()
     structure.externalIds?.forEach(({ system, identifier }) => {
       requireText(system, `Anatomy structure "${structure.id}" external identifier system`)
       requireText(identifier, `Anatomy structure "${structure.id}" external identifier`)
       const key = `${system}\u0000${identifier}`
-      if (externalIdentifiers.has(key)) {
-        throw new Error(`Duplicate external identifier "${system}:${identifier}" on anatomy structure "${structure.id}".`)
+      const existingStructureId = externalIdentifiers.get(key)
+      if (existingStructureId) {
+        throw new Error(
+          `Duplicate external identifier "${system}:${identifier}" on anatomy structures "${existingStructureId}" and "${structure.id}".`,
+        )
       }
-      externalIdentifiers.add(key)
+      externalIdentifiers.set(key, structure.id)
     })
 
     structure.meshAssociations.forEach((association) => {

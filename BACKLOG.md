@@ -11,10 +11,10 @@ reorder priorities; explain any reprioritization in the note below.
 - Anatomy IDs are application-owned, namespaced, and validated separately
   from external identifiers. Mesh associations support multiple meshes per
   structure.
-- Catalog construction validates required fields, duplicate identities,
-  supported mesh formats, and relationship targets. Optional reference
-  content is shown as unavailable when absent; the six current records remain
-  the only anatomy data.
+- Catalog construction validates required fields, catalog-wide anatomy and
+  external ID uniqueness, mesh associations, supported formats, and
+  relationship targets. Optional reference content is shown as unavailable
+  when absent; the six current records remain the only anatomy data.
 - Asset loading/recovery and interaction controls are implemented for the
   current six meshes. Parsed GPU geometry and materials are disposed when the
   viewport is removed; WebGL support is determined by the actual renderer.

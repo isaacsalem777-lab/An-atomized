@@ -40,8 +40,8 @@ npm run test:e2e
 ## Data and rendering foundations
 - Anatomy IDs use the application-owned `anatomy:` namespace and are branded
   separately from external identifiers. Catalog construction checks required
-  identity fields, duplicate IDs and mesh associations, supported formats, and
-  relationship targets.
+  identity fields, duplicate anatomy IDs, external identifiers and mesh
+  associations, supported formats, and relationship targets.
 - A structure can reference multiple mesh associations. Descriptions,
   locations, and functions are optional; missing reference text is presented
   as unavailable rather than invented.
