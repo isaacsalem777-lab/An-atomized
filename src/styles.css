@@ -622,8 +622,11 @@ button:focus-visible, select:focus-visible, input:focus-visible {
 .structure-index-heading .panel-section-heading span { color: var(--secondary); font-size: 12px; font-weight: 500; }
 .structure-index-section { padding-bottom: 12px; }
 .structure-index-group + .structure-index-group { margin-top: 12px; padding-top: 8px; border-top: 1px solid #29394d70; }
-.structure-index-group-heading { display: flex; align-items: center; justify-content: space-between; margin: 3px 0 5px; color: #b6c8df; font-size: 12px; font-weight: 650; }
+.structure-index-group-heading { display: flex; align-items: center; justify-content: space-between; margin: 3px 0 7px; color: #b6c8df; font-size: 12px; font-weight: 650; }
 .structure-index-group-heading span { color: var(--secondary); font-size: 11px; font-weight: 500; }
+.structure-index-subgroup { margin: 0 0 8px 7px; padding-left: 9px; border-left: 1px solid #29394d; }
+.structure-index-subgroup-heading { display: flex; align-items: center; justify-content: space-between; margin: 5px 0 3px; color: #9db3d0; font-size: 11px; font-weight: 600; }
+.structure-index-subgroup-heading span { color: #8296b1; font-size: 10px; font-weight: 500; }
 .structure-search { display: grid; gap: 7px; margin: 0 0 10px; color: var(--secondary); font-size: 13px; }
 .structure-search input {
   width: 100%;

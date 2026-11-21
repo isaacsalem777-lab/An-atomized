@@ -1,12 +1,12 @@
 import { expect, test } from '@playwright/test'
 
-test('Explore is the honest default and fabricated dashboard content is absent', async ({ page }) => {
+test('Atlas is the honest default and fabricated dashboard content is absent', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.goto('/')
-  await expect(page).toHaveTitle('ANATOMY — Anatomy Explorer')
+  await expect(page).toHaveTitle('ANATOMY — Anatomy Atlas')
   await expect(page.locator('.model-stage')).toHaveAttribute('data-model-ready', 'true')
-  await expect(page.getByRole('heading', { name: 'Explore anatomy' })).toBeVisible()
-  await expect(page.locator('.main-nav .nav-item.selected')).toHaveText('Explore')
+  await expect(page.getByRole('heading', { name: 'Anatomy Atlas' })).toBeVisible()
+  await expect(page.locator('.main-nav .nav-item.selected')).toHaveText('Atlas')
   await expect(page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button')).toHaveCount(3)
   await expect(page.getByRole('button', { name: 'Dashboard', exact: true })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Atlas reference' })).toHaveCount(0)
@@ -32,8 +32,8 @@ test('Challenge and Progress explain their real availability without fake metric
   await expect(page.getByRole('heading', { name: 'Progress tracking is not available yet' })).toBeVisible()
   await expect(page.locator('.future-state')).toContainText('No progress has been tracked.')
   await expect(page.locator('.stat-tile')).toHaveCount(0)
-  await page.getByRole('button', { name: 'Explore anatomy' }).click()
-  await expect(page.getByRole('heading', { name: 'Explore anatomy' })).toBeVisible()
+  await page.getByRole('button', { name: 'Open Atlas' }).click()
+  await expect(page.getByRole('heading', { name: 'Anatomy Atlas' })).toBeVisible()
 })
 
 test('reference search, details visibility, and Help respond at desktop widths', async ({ page }) => {
@@ -80,14 +80,16 @@ test('filters reflect only catalog anatomy and mobile navigation remains usable 
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
   await expect(page.locator('.model-stage')).toHaveAttribute('data-model-ready', 'true')
-  await expect(page.getByLabel('System filter').locator('option')).toHaveText(['All systems', 'Skeletal'])
+  await expect(page.getByLabel('System filter').locator('option')).toHaveText(['All systems', 'Bone and joints'])
   await expect(page.getByLabel('Region filter').locator('option')).toHaveText([
-    'All regions', 'Skull', 'Spine', 'Thorax', 'Pelvis', 'Upper limbs', 'Lower limbs',
+    'All regions', 'Skull', 'Neck', 'Spine', 'Thorax', 'Pelvis', 'Upper limbs', 'Lower limbs',
   ])
 
-  await page.getByLabel('System filter').selectOption('Skeletal')
+  await page.getByLabel('System filter').selectOption('Bone and joints')
   await page.getByLabel('Region filter').selectOption('Skull')
-  await expect(page.locator('.model-stage')).toHaveAttribute('data-visible-count', '23')
+  await expect(page.locator('.model-stage')).toHaveAttribute('data-visible-count', '22')
+  await page.getByLabel('Region filter').selectOption('Neck')
+  await expect(page.locator('.model-stage')).toHaveAttribute('data-visible-count', '1')
 
   await expect(page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button')).toHaveCount(3)
   await page.getByRole('button', { name: 'Progress', exact: true }).click()
@@ -104,11 +106,11 @@ test('keeps keyboard focus visible and honors reduced-motion preferences', async
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/')
 
-  const explore = page.getByRole('button', { name: 'Explore', exact: true })
+  const atlas = page.getByRole('button', { name: 'Atlas', exact: true })
   await page.keyboard.press('Tab')
-  await expect(explore).toBeFocused()
-  await expect(explore).toHaveCSS('outline-style', 'solid')
-  await expect(explore).toHaveCSS('transition-duration', '0s')
+  await expect(atlas).toBeFocused()
+  await expect(atlas).toHaveCSS('outline-style', 'solid')
+  await expect(atlas).toHaveCSS('transition-duration', '0s')
 })
 
 test('announces the deferred viewport while its module is loading', async ({ page }) => {

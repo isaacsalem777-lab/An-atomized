@@ -44,6 +44,19 @@ test('preserves application IDs and maps every structure to the imported source 
   expect(nonFmaRecords.every((structure) => structure.externalIds?.some(({ system }) => system === 'BodyParts3D'))).toBe(true)
 })
 
+test('organizes the skull as 8 cranial and 14 facial bones and places the hyoid in the neck', () => {
+  const skull = structures.filter((structure) => structure.region === 'Skull')
+  const cranialBones = skull.filter((structure) => structure.subgroup === 'Cranial bones')
+  const facialBones = skull.filter((structure) => structure.subgroup === 'Facial bones')
+  const hyoid = structures.find((structure) => structure.name === 'Hyoid bone')
+
+  expect(cranialBones).toHaveLength(8)
+  expect(facialBones).toHaveLength(14)
+  expect(new Set(skull.map((structure) => structure.id)).size).toBe(22)
+  expect(hyoid?.region).toBe('Neck')
+  expect(hyoid?.subgroup).toBeUndefined()
+})
+
 test('matches the bundled GLB size and checksum recorded in its manifest', () => {
   const model = readFileSync(new URL(`${modelDirectory}skeleton.glb`, import.meta.url))
   expect(model.byteLength).toBe(manifest.runtime.bytes)

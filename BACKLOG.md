@@ -5,7 +5,7 @@ reorder priorities; explain any reprioritization in the note below.
 
 ## Current state
 
-- Explore uses the Obsidian Atrium visual direction and the BodyParts3D 3.0
+- Atlas uses the Obsidian Atrium visual direction and the BodyParts3D 3.0
   skeleton adaptation.
 - The pinned model contains 242 selectable structures, including bones,
   costal cartilages, and intervertebral discs. Source identifiers, names,
@@ -17,6 +17,10 @@ reorder priorities; explain any reprioritization in the note below.
 - The six facial structures from the prototype retain their original
   application-owned IDs. Left/right records remain distinct where present in
   the source. No unsupported relationships have been added.
+- The Atlas index groups structures by region and source subgroup. Its skull
+  region contains 8 cranial-bone records and 14 facial-bone records. The hyoid
+  is placed in the Neck region based on the source description; its original
+  source grouping is retained in the source metadata.
 - The source subset is incomplete and simplified: it omits the coccyx, teeth,
   and ear ossicles; hip bones and foot sesamoids are combined meshes; the
   lower costal-cartilage interpretation is inferred by the source. It is an
@@ -26,17 +30,17 @@ reorder priorities; explain any reprioritization in the note below.
 
 ## Priorities
 
-### 1. Measure the skeleton viewport on desktop and mobile
+### 1. Implement the skull identification challenge
 
-- **Why it matters:** The new model has 242 meshes and approximately 277,228
-  triangles; verify actual startup, rendering, selection, and memory behavior
-  before expanding the catalog.
-- **Work:** Record reproducible load and interaction measurements on desktop
-  and a representative mobile device. Investigate lazy GLTF parsing, resource
-  budgeting, and raycast cost only if measurements identify a bottleneck.
-- **Verify completion:** Test large and small viewport framing, repeated
-  Explore navigation, failure recovery, and GPU-resource cleanup. Do not
-  trade away anatomical detail without evidence.
+- **Why it matters:** The Atlas exposes the source-backed 8 cranial and
+  14 facial bone structures with independent paired geometry.
+- **Work:** Build the ordered curriculum from those real structures. Keep
+  left/right meshes independent while accepting the shared bone name in the
+  basic challenge. Add answer input, hints, feedback, advancement, and
+  completion.
+- **Verify completion:** Test correct and incorrect answers, every supported
+  target, progression, restart, and completion against the actual GLB. Do not
+  include absent geometry or fabricate statistics.
 
 ### 2. Add source-grounded reference content
 
@@ -60,25 +64,33 @@ reorder priorities; explain any reprioritization in the note below.
   identity mappings, and preserve separate left/right structures and
   multi-mesh associations where the source supports them.
 
-### 4. Implement a complete identification-challenge lifecycle
+### 4. Expand Atlas to additional anatomical systems
 
-- **Why it matters:** Challenges should test supported structures with
-  meaningful correctness feedback, not act as a decorative destination.
-- **Depends on:** Reviewed selectable anatomy and accessible structure IDs.
-- **Work:** Specify question generation, valid targets, answer handling,
-  feedback, advancement, and session completion before implementation.
-- **Verify completion:** Tests cover start, correct and incorrect answers,
-  unavailable/hidden structures, feedback, and ending or restarting a session.
+- **Why it matters:** The eventual Atlas must support the systems listed in
+  the product specification, not imply that skeletal coverage is complete.
+- **Work:** Integrate real, licensed geometry and source-grounded metadata
+  system by system, retaining missing-data boundaries.
+- **Verify completion:** Each system has validated geometry-to-structure
+  associations, attribution, and honest coverage documentation.
 
 ### 5. Add genuine learning progress
 
 - **Why it matters:** Progress is useful only when derived from actual,
   completed learning sessions.
-- **Depends on:** Priority 4 produces reliable result events.
+- **Depends on:** Priority 1 produces reliable result events.
 - **Work:** Define which results to retain and how users can clear them before
   adding persistence or metrics.
 - **Verify completion:** Tests prove every displayed value derives from real
   results and survives the documented lifecycle; no placeholder metrics.
+
+### 6. Measure viewport performance when evidence warrants it
+
+- **Why it matters:** The model has 242 meshes and approximately 277,228
+  triangles; optimize only against a demonstrated bottleneck.
+- **Work:** Record reproducible startup, rendering, selection, and memory
+  measurements on desktop and a representative mobile device.
+- **Verify completion:** Confirm viewport framing, recovery, navigation, and
+  GPU-resource cleanup. Do not reduce anatomical detail without evidence.
 
 ## Verification policy
 
@@ -89,10 +101,9 @@ implementation milestone.
 
 ## Reprioritization note
 
-The previously approved full-skeleton integration supersedes the earlier
-six-bone-only catalog and dataset-qualification priorities. The selected
-BodyParts3D adaptation has been pinned and its license, source metadata,
-manifest, and actual GLB contents were verified before import. The next
-highest-value work is to measure the integrated viewport and establish
-source-backed reference coverage; the model's documented omissions remain
-explicit rather than being filled with unverified anatomy.
+The product specification prioritizes Atlas organization and the skull
+challenge ahead of general measurement or cosmetic work. This milestone adds
+source-subgroup browsing and the verified 8/14 skull grouping. The next
+highest-value deliverable is the skull challenge using the integrated
+geometry. Documented omissions remain explicit rather than being filled with
+unverified anatomy.

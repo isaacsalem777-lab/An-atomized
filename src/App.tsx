@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import {
   ChartNoAxesColumnIncreasing,
   ChevronDown,
@@ -15,18 +15,18 @@ import {
 import type { LucideIcon } from 'lucide-react'
 import { anatomyCatalog, structures, type AnatomyId } from './data/anatomy'
 
-type Tab = 'Explore' | 'Challenge' | 'Progress'
+type Tab = 'Atlas' | 'Challenge' | 'Progress'
 
 const Viewport = lazy(() => import('./components/Viewport'))
 
 const nav: { name: Tab; icon: LucideIcon }[] = [
-  { name: 'Explore', icon: Compass },
+  { name: 'Atlas', icon: Compass },
   { name: 'Challenge', icon: Target },
   { name: 'Progress', icon: ChartNoAxesColumnIncreasing },
 ]
 
 const systems = ['All systems', ...new Set(structures.map(structure => structure.system))]
-const regions = ['All regions', 'Skull', 'Spine', 'Thorax', 'Pelvis', 'Upper limbs', 'Lower limbs']
+const regions = ['All regions', 'Skull', 'Neck', 'Spine', 'Thorax', 'Pelvis', 'Upper limbs', 'Lower limbs']
 
 function matchesFilters(structure: typeof structures[number], system: string, region: string) {
   return (system === 'All systems' || structure.system === system)
@@ -34,9 +34,13 @@ function matchesFilters(structure: typeof structures[number], system: string, re
 }
 
 export default function App() {
-  const [tab, setTab] = useState<Tab>('Explore')
+  const [tab, setTab] = useState<Tab>('Atlas')
   const [system, setSystem] = useState('All systems')
   const [region, setRegion] = useState('All regions')
+  const fitStructureIds = useMemo(
+    () => new Set(structures.filter(structure => matchesFilters(structure, system, region)).map(structure => structure.id)),
+    [region, system],
+  )
   const [selectedId, setSelectedId] = useState<AnatomyId | null>(null)
   const selected = selectedId ? anatomyCatalog.structuresById.get(selectedId) : undefined
   const selectStructure = (id: AnatomyId | null) => setSelectedId(current => current === id ? null : id)
@@ -67,10 +71,24 @@ export default function App() {
     ]
     return [structure.name, ...identifiers].some(value => value.toLowerCase().includes(normalizedSearch))
   })
-  const referenceGroups = regions.slice(1).map(group => ({
-    group,
-    structures: referenceStructures.filter(structure => structure.region === group),
-  })).filter(group => group.structures.length > 0)
+  const referenceGroups = regions.slice(1).map(group => {
+    const groupStructures = referenceStructures.filter(structure => structure.region === group)
+    const subgroups = new Map<string, typeof structures[number][]>()
+    groupStructures.forEach(structure => {
+      const subgroup = structure.subgroup ?? 'Subgroup not provided'
+      const subgroupStructures = subgroups.get(subgroup)
+      if (subgroupStructures) subgroupStructures.push(structure)
+      else subgroups.set(subgroup, [structure])
+    })
+    return {
+      group,
+      count: groupStructures.length,
+      subgroups: Array.from(subgroups, ([subgroup, subgroupStructures]) => ({
+        subgroup,
+        structures: subgroupStructures,
+      })),
+    }
+  }).filter(group => group.count > 0)
   const visibleStructureIds = new Set(filteredStructures
     .filter(structure => isolationId ? structure.id === isolationId : !hiddenIds.has(structure.id))
     .map(structure => structure.id))
@@ -134,14 +152,14 @@ export default function App() {
         <button className="top-icon" aria-label="Help" title="Help" onClick={() => setHelpOpen(true)}><CircleHelp size={19}/></button>
       </header>
 
-      <div className={`page-content ${tab === 'Explore' ? 'explore-page' : 'future-page'}`}>
+      <div className={`page-content ${tab === 'Atlas' ? 'atlas-page' : 'future-page'}`}>
         <div className="page-heading">
           <div>
-            <p className="eyebrow">{tab === 'Explore' ? 'Interactive anatomy' : 'Coming later'}</p>
-            <h1>{tab === 'Explore' ? 'Explore anatomy' : tab}</h1>
+            <p className="eyebrow">{tab === 'Atlas' ? 'Interactive anatomy' : 'Coming later'}</p>
+            <h1>{tab === 'Atlas' ? 'Anatomy Atlas' : tab}</h1>
             <p className="page-description">
-              {tab === 'Explore'
-                ? `Explore ${structures.length} selectable structures across the skull, spine, thorax, pelvis, and limbs. This is a simplified adult-male reference model with documented omissions and combined meshes.`
+              {tab === 'Atlas'
+                ? `Browse ${structures.length} selectable structures across the skull, neck, spine, thorax, pelvis, and limbs. This is a simplified adult-male reference model with documented omissions and combined meshes.`
                 : tab === 'Challenge'
                   ? 'Identification challenges are not available yet.'
                   : 'Progress tracking is not available yet.'}
@@ -149,7 +167,7 @@ export default function App() {
           </div>
         </div>
 
-        {tab === 'Explore' ? <div className="workspace-grid">
+        {tab === 'Atlas' ? <div className="workspace-grid">
           <div className="center-column">
             <div className="toolbar">
               <div className="toolbar-selects">
@@ -187,6 +205,7 @@ export default function App() {
               <Viewport
                 selectedId={selectedId}
                 onSelect={selectStructure}
+                fitStructureIds={fitStructureIds}
                 visibleStructureIds={visibleStructureIds}
                 matchedStructureCount={filteredStructures.length}
                 hiddenCount={hiddenCount}
@@ -294,29 +313,36 @@ export default function App() {
                 <span>Search anatomy</span>
                 <input aria-label="Search structures" autoFocus value={searchTerm} onChange={event => setSearchTerm(event.target.value)} placeholder="Name, ID, or mesh"/>
               </label>}
-              {referenceStructures.length > 0 ? referenceGroups.map(({ group, structures: groupStructures }) => <div key={group} className="structure-index-group">
-                <div className="structure-index-group-heading">{group}<span>{groupStructures.length}</span></div>
-                {groupStructures.map(structure => {
-                const isolated = isolationId === structure.id
-                const hiddenByIsolation = isolationId !== null && !isolated
-                const hidden = hiddenIds.has(structure.id)
-                const displayed = isolated || (!hiddenByIsolation && !hidden)
-                const visibilityLabel = hiddenByIsolation ? 'Hidden by isolation' : isolated ? 'Isolated' : hidden ? 'Hidden' : 'Visible'
-                return <div key={structure.id} className={`structure-row ${selected?.id === structure.id ? 'current' : ''} ${displayed ? '' : 'structure-row-hidden'}`}>
-                  <button className="structure-select" aria-label={`Select ${structure.name}`} aria-pressed={selected?.id === structure.id} onClick={() => setSelectedId(structure.id)}>
-                    <span>{structure.name}</span><span className="structure-visibility-label">{visibilityLabel}</span>
-                  </button>
-                  <button
-                    className="structure-visibility-button"
-                    aria-label={hiddenByIsolation ? `${structure.name} hidden by isolation` : `${hidden ? 'Show' : 'Hide'} ${structure.name}`}
-                    title={visibilityLabel}
-                    disabled={hiddenByIsolation}
-                    onClick={() => setStructureVisibility(structure.id, !displayed)}
-                  >
-                    {displayed ? <Eye size={17}/> : <EyeOff size={17}/>}
-                  </button>
-                </div>
-                })}
+              {referenceStructures.length > 0 ? referenceGroups.map(({ group, count, subgroups }) => <div key={group} className="structure-index-group">
+                <h3 className="structure-index-group-heading" aria-label={`${group}, ${count} ${count === 1 ? 'structure' : 'structures'}`}>
+                  {group}<span aria-hidden="true">{count}</span>
+                </h3>
+                {subgroups.map(({ subgroup, structures: subgroupStructures }) => <div key={subgroup} className="structure-index-subgroup">
+                  <h4 className="structure-index-subgroup-heading" aria-label={`${subgroup}, ${subgroupStructures.length} ${subgroupStructures.length === 1 ? 'structure' : 'structures'}`}>
+                    {subgroup}<span aria-hidden="true">{subgroupStructures.length}</span>
+                  </h4>
+                  {subgroupStructures.map(structure => {
+                    const isolated = isolationId === structure.id
+                    const hiddenByIsolation = isolationId !== null && !isolated
+                    const hidden = hiddenIds.has(structure.id)
+                    const displayed = isolated || (!hiddenByIsolation && !hidden)
+                    const visibilityLabel = hiddenByIsolation ? 'Hidden by isolation' : isolated ? 'Isolated' : hidden ? 'Hidden' : 'Visible'
+                    return <div key={structure.id} className={`structure-row ${selected?.id === structure.id ? 'current' : ''} ${displayed ? '' : 'structure-row-hidden'}`}>
+                      <button className="structure-select" aria-label={`Select ${structure.name}`} aria-pressed={selected?.id === structure.id} onClick={() => setSelectedId(structure.id)}>
+                        <span>{structure.name}</span><span className="structure-visibility-label">{visibilityLabel}</span>
+                      </button>
+                      <button
+                        className="structure-visibility-button"
+                        aria-label={hiddenByIsolation ? `${structure.name} hidden by isolation` : `${hidden ? 'Show' : 'Hide'} ${structure.name}`}
+                        title={visibilityLabel}
+                        disabled={hiddenByIsolation}
+                        onClick={() => setStructureVisibility(structure.id, !displayed)}
+                      >
+                        {displayed ? <Eye size={17}/> : <EyeOff size={17}/>}
+                      </button>
+                    </div>
+                  })}
+                </div>)}
               </div>) : <p className="filter-empty-message" role="status">{normalizedSearch ? 'No structures match your search.' : 'No structures match the selected filters.'}</p>}
             </div>
           </aside>}
@@ -326,10 +352,10 @@ export default function App() {
           <h2 id="future-state-title">{tab === 'Challenge' ? 'Challenge sessions are not available yet' : 'Progress tracking is not available yet'}</h2>
           <p>
             {tab === 'Challenge'
-              ? 'Timed rounds, answer validation, and scoring are not implemented. Explore the currently available skeletal structures in the meantime.'
+              ? 'Timed rounds, answer validation, and scoring are not implemented. Browse the available structures in the Atlas in the meantime.'
               : 'Your learning history will appear here after real challenge results can be recorded. No progress has been tracked.'}
           </p>
-          <button className="primary-button" onClick={() => setTab('Explore')}>Explore anatomy<ChevronRight size={18}/></button>
+          <button className="primary-button" onClick={() => setTab('Atlas')}>Open Atlas<ChevronRight size={18}/></button>
         </section>}
 
         <footer className="page-footer">Educational preview · Not for clinical use</footer>
@@ -339,10 +365,10 @@ export default function App() {
     {helpOpen && <div className="help-dialog-backdrop" onClick={() => setHelpOpen(false)}>
       <section className="help-dialog" role="dialog" aria-modal="true" aria-labelledby="help-title" onClick={event => event.stopPropagation()} onKeyDown={event => {if(event.key === 'Escape') setHelpOpen(false)}}>
         <div className="help-dialog-header">
-          <div><p className="panel-overline">Anatomy explorer</p><h2 id="help-title">Using the anatomy viewer</h2></div>
+          <div><p className="panel-overline">Anatomy Atlas</p><h2 id="help-title">Using the anatomy viewer</h2></div>
           <button className="panel-icon-button" aria-label="Close help" autoFocus onClick={() => setHelpOpen(false)}><X size={18}/></button>
         </div>
-        <p>Select a structure in the model or index to view its reference information. Search by name, anatomy ID, source identifier, or source mesh ID.</p>
+        <p>Select a structure in the model or Atlas index to view its reference information. Search by name, anatomy ID, source identifier, or source mesh ID.</p>
         <p>Drag to orbit, scroll to zoom, and right-drag to pan. Selected structures can be hidden, isolated, or made transparent.</p>
         <p>The model contains {structures.length} selectable structures: bones, costal cartilages, and intervertebral discs. It omits the coccyx, teeth, and ear ossicles; some structures are combined meshes. See the bundled attribution for source and license details.</p>
         <button className="tool-button help-close-button" onClick={() => setHelpOpen(false)}>Close help</button>

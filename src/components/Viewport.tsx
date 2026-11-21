@@ -10,6 +10,7 @@ import { disposeModelResources } from '../utils/disposeModelResources'
 type Props = {
   selectedId: AnatomyId | null
   onSelect: (id: AnatomyId | null) => void
+  fitStructureIds: ReadonlySet<AnatomyId>
   visibleStructureIds: ReadonlySet<AnatomyId>
   matchedStructureCount: number
   hiddenCount: number
@@ -324,9 +325,10 @@ function Bone({ structure, association, source, selectedId, onSelect, wire, opac
   </group>
 }
 
-function SkeletonModel({ model, meshes, selectedId, onSelect, wire, opacityById, resetKey }: {
+function SkeletonModel({ model, meshes, fitMeshes, selectedId, onSelect, wire, opacityById, resetKey }: {
   model: THREE.Group
   meshes: readonly { structure: AnatomyStructure; association: MeshAssociation; source: THREE.Mesh }[]
+  fitMeshes: readonly THREE.Mesh[]
   selectedId: AnatomyId | null
   onSelect: (id: AnatomyId) => void
   wire: boolean
@@ -335,7 +337,9 @@ function SkeletonModel({ model, meshes, selectedId, onSelect, wire, opacityById,
 }) {
   const { size } = useThree()
   const target = useMemo(() => {
-    const bounds = new THREE.Box3().setFromObject(model)
+    const bounds = new THREE.Box3()
+    if (fitMeshes.length > 0) fitMeshes.forEach(mesh => bounds.expandByObject(mesh))
+    else bounds.setFromObject(model)
     const aspect = size.width / Math.max(size.height, 1)
     const verticalHalfAngle = THREE.MathUtils.degToRad(37 / 2)
     const horizontalHalfAngle = Math.atan(Math.tan(verticalHalfAngle) * aspect)
@@ -350,7 +354,7 @@ function SkeletonModel({ model, meshes, selectedId, onSelect, wire, opacityById,
     const visibleHeight = 2 * fitDistance * Math.tan(verticalHalfAngle)
     center.y += ((topInset - bottomInset) / 2 / Math.max(size.height, 1)) * visibleHeight
     return { center, fitDistance }
-  }, [model, size.height, size.width])
+  }, [fitMeshes, model, size.height, size.width])
   const { center, fitDistance } = target
 
   return <>
@@ -394,6 +398,7 @@ function failureLabel(state: SkeletonAssetState) {
 export default function Viewport({
   selectedId,
   onSelect,
+  fitStructureIds,
   visibleStructureIds,
   matchedStructureCount,
   hiddenCount,
@@ -433,6 +438,13 @@ export default function Viewport({
       return source && visibleStructureIds.has(structure.id) ? [{ structure, association, source }] : []
     })
     : []
+  const fitMeshes = useMemo(() => assetState.status === 'ready'
+    ? Array.from(anatomyCatalog.meshAssociationsById.values()).flatMap(({ structure, association }) => {
+      if (!fitStructureIds.has(structure.id)) return []
+      const source = assetState.meshesBySourceId.get(association.sourceMeshId)
+      return source ? [source] : []
+    })
+    : [], [assetState, fitStructureIds])
   const topStatus = webgl.status === 'checking'
     ? 'Checking WebGL 2'
     : webgl.status === 'unavailable'
@@ -514,6 +526,7 @@ export default function Viewport({
             {assetState.status === 'ready' && <SkeletonModel
               model={assetState.model}
               meshes={meshes}
+              fitMeshes={fitMeshes}
               selectedId={selectedId}
               onSelect={onSelect}
               wire={wire}

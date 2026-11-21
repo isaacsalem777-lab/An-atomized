@@ -131,6 +131,10 @@ const regionsByGroup: Readonly<Record<string, string>> = {
   'Left lower limb': 'Lower limbs',
 }
 
+const regionOverridesBySourceId: Readonly<Record<string, string>> = {
+  'hyoid-bone': 'Neck',
+}
+
 function getOwnedAnatomyId(source: SkeletonSourceStructure): AnatomyId {
   const legacyId = legacyAnatomyIds[source.fma]
   if (legacyId) return legacyId
@@ -146,7 +150,7 @@ function getLaterality(source: SkeletonSourceStructure): Laterality {
 }
 
 export const structures: readonly AnatomyStructure[] = (skeletonStructures as SkeletonSourceStructure[]).map((source) => {
-  const region = regionsByGroup[source.group]
+  const region = regionOverridesBySourceId[source.id] ?? regionsByGroup[source.group]
   if (!region) throw new Error(`Unknown BodyParts3D skeleton group "${source.group}" for "${source.id}".`)
   const externalIdSystem = /^FMA\d+$/.test(source.fma) ? 'FMA' : 'BodyParts3D'
   const legacy = legacyReference[source.fma]
@@ -155,7 +159,7 @@ export const structures: readonly AnatomyStructure[] = (skeletonStructures as Sk
     id: getOwnedAnatomyId(source),
     name: source.name,
     sourceName: source.sourceName,
-    system: 'Skeletal',
+    system: 'Bone and joints',
     region,
     subgroup: source.subgroup,
     laterality: getLaterality(source),

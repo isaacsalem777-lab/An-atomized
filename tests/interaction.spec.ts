@@ -15,7 +15,7 @@ const anatomy = [
 
 async function openAtlas(page: import('@playwright/test').Page) {
   await page.goto('/')
-  await page.getByRole('button', { name: 'Explore', exact: true }).click()
+  await page.getByRole('button', { name: 'Atlas', exact: true }).click()
   await expect(page.locator('.model-stage')).toHaveAttribute('data-model-ready', 'true')
 }
 
@@ -75,20 +75,35 @@ test('synchronizes panel selection and filters using the available anatomy catal
   await expect(page.locator('.right-panel h2')).toHaveText('Body of sternum')
   await expect(stage).toHaveAttribute('data-selected-id', 'anatomy:skeleton:fma7487')
 
-  await page.getByLabel('System filter').selectOption('Skeletal')
+  await page.getByLabel('System filter').selectOption('Bone and joints')
   await expect(stage).toHaveAttribute('data-visible-count', '242')
   await expect(page.getByLabel('Region filter').locator('option')).toHaveText([
-    'All regions', 'Skull', 'Spine', 'Thorax', 'Pelvis', 'Upper limbs', 'Lower limbs',
+    'All regions', 'Skull', 'Neck', 'Spine', 'Thorax', 'Pelvis', 'Upper limbs', 'Lower limbs',
   ])
   await page.getByLabel('Region filter').selectOption('Skull')
-  await expect(stage).toHaveAttribute('data-visible-count', '23')
+  await expect(stage).toHaveAttribute('data-visible-count', '22')
+  await expect(page.getByRole('heading', { name: 'Skull, 22 structures' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Cranial bones, 8 structures' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Facial bones, 14 structures' })).toBeVisible()
+
+  await page.getByRole('button', { name: 'Select Left maxilla' }).click()
+  await expect(stage).toHaveAttribute('data-selected-id', 'anatomy:bone:maxilla:left')
+  await page.getByRole('button', { name: 'Select Right maxilla' }).click()
+  await expect(stage).toHaveAttribute('data-selected-id', 'anatomy:bone:maxilla:right')
 
   await page.getByRole('button', { name: 'Select Left zygomatic bone' }).click()
   await expect(stage).toHaveAttribute('data-selected-id', 'anatomy:bone:zygomatic:left')
   await page.locator('.structure-control-section').getByRole('button', { name: 'Hide Left zygomatic bone' }).click()
-  await expect(stage).toHaveAttribute('data-visible-count', '22')
+  await expect(stage).toHaveAttribute('data-visible-count', '21')
   await page.locator('.structure-control-section').getByRole('button', { name: 'Show Left zygomatic bone' }).click()
-  await expect(stage).toHaveAttribute('data-visible-count', '23')
+  await expect(stage).toHaveAttribute('data-visible-count', '22')
+
+  await page.getByLabel('Region filter').selectOption('Neck')
+  await expect(stage).toHaveAttribute('data-visible-count', '1')
+  await expect(page.getByRole('heading', { name: 'Subgroup not provided, 1 structure' })).toBeVisible()
+  await page.getByRole('button', { name: 'Select Hyoid bone' }).click()
+  await expect(stage).toHaveAttribute('data-selected-id', 'anatomy:skeleton:fma52749')
+  await expect(page.locator('.structure-tags')).toContainText('Neck')
 })
 
 test('adjusts opacity while retaining selection on a translucent 3D structure', async ({ page }) => {
@@ -113,7 +128,7 @@ test('keeps reference controls usable and the layout within mobile width', async
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
   await expect(page.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible()
-  await page.getByRole('button', { name: 'Explore', exact: true }).click()
+  await page.getByRole('button', { name: 'Atlas', exact: true }).click()
   await expect(page.locator('.model-stage')).toHaveAttribute('data-model-ready', 'true')
   await page.getByRole('button', { name: 'Select Left zygomatic bone' }).click()
   await page.locator('.structure-index-section').getByRole('button', { name: 'Hide Left zygomatic bone' }).click()

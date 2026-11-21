@@ -1,6 +1,6 @@
-# ANATOMY — Interactive Skeleton Explorer
+# ANATOMY — Interactive Anatomy Atlas
 
-ANATOMY is a React + TypeScript anatomy exploration prototype with a live WebGL viewport and an individually selectable 242-structure human skeleton.
+ANATOMY is a React + TypeScript anatomy learning prototype with a live WebGL viewport and an individually selectable, source-attributed 242-structure skeleton.
 
 ## Requirements and local development
 
@@ -24,11 +24,12 @@ npm run test:e2e
 
 The browser tests use Playwright and Chromium. Install Chromium once with `npx playwright install chromium` if it is not already available.
 
-## Explore
+## Atlas
 
 - The model has 242 selectable structures: bones, costal cartilages, and intervertebral discs. This is not a count of 242 bones.
-- Structures are organized into skull, spine, thorax, pelvis, upper-limb, and lower-limb regions, with separate left and right records where the source provides them.
-- Select structures in 3D or in the searchable index. Hide/show, isolation, opacity, region filtering, camera orbit, zoom, and pan are available.
+- Structures are organized by system, region, and source subgroup, with separate left and right records where the source provides them.
+- The skull region exposes 8 cranial-bone and 14 facial-bone records as separate Atlas groups. The hyoid is placed in the Neck region based on its source description; its original source grouping remains in the source metadata.
+- Select structures in 3D or in the searchable index. Region filters frame the matching geometry; hide/show, isolation, opacity, camera orbit, zoom, and pan are available.
 - The application preserves the six original facial-structure ANATOMY IDs and assigns application-owned stable IDs to the remaining source structures.
 - Challenge and Progress are unavailable destinations. Challenge gameplay and result tracking are not implemented; no performance statistics are displayed.
 
@@ -40,7 +41,7 @@ The model omits the coccyx, teeth, and ear ossicles; hip bones are combined mesh
 
 The model is licensed under [CC BY-SA 2.1 Japan](https://creativecommons.org/licenses/by-sa/2.1/jp/deed.en). Required credit: “BodyParts3D, © The Database Center for Life Science licensed under CC Attribution-Share Alike 2.1 Japan.” The catalog descriptions and names are derived from OrganUI metadata under its MIT license, provided separately at [ORGANUI-LICENSE.txt](./public/assets/anatomy/bodyparts3d/skeleton-3.0/ORGANUI-LICENSE.txt). These licenses are distinct; the MIT license does not relicense the model.
 
-The source metadata is retained in [skeleton-structures.json](./src/data/skeleton-structures.json). No anatomy or relationships are inferred for missing source records. Educational exploration only; not for clinical use.
+The source metadata is retained in [skeleton-structures.json](./src/data/skeleton-structures.json). No anatomy or relationships are inferred for missing source records. Educational use only; not for clinical use.
 
 ## Data and rendering foundations
 
