@@ -42,7 +42,7 @@ export default function App() {
   const selectStructure = (id: AnatomyId | null) => setSelectedId(current => current === id ? null : id)
   const [hiddenIds, setHiddenIds] = useState<ReadonlySet<AnatomyId>>(() => new Set())
   const [isolationId, setIsolationId] = useState<AnatomyId | null>(null)
-  const [transparencyById, setTransparencyById] = useState<Partial<Record<AnatomyId, number>>>({})
+  const [opacityById, setOpacityById] = useState<Partial<Record<AnatomyId, number>>>({})
   const [showInfo, setShowInfo] = useState(true)
   const [helpOpen, setHelpOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -185,7 +185,7 @@ export default function App() {
                 matchedStructureCount={filteredStructures.length}
                 hiddenCount={hiddenCount}
                 isolationId={isolationId}
-                transparencyById={transparencyById}
+                opacityById={opacityById}
               />
             </Suspense>
           </div>
@@ -246,18 +246,18 @@ export default function App() {
                     <Target size={17}/><span>{isolationId === selected.id ? 'Exit isolation' : 'Isolate'}</span>
                   </button>
                 </div>
-                <label className="transparency-control">
-                  <span>Transparency <strong>{transparencyById[selected.id] ?? 100}%</strong></span>
+                <label className="opacity-control">
+                  <span>Opacity <strong>{opacityById[selected.id] ?? 100}%</strong></span>
                   <input
-                    aria-label={`Transparency for ${selected.name}`}
+                    aria-label={`Opacity for ${selected.name}`}
                     type="range"
                     min="15"
                     max="100"
                     step="5"
-                    value={transparencyById[selected.id] ?? 100}
+                    value={opacityById[selected.id] ?? 100}
                     onChange={event => {
                       const value = Number(event.target.value)
-                      setTransparencyById(current => ({ ...current, [selected.id]: value }))
+                      setOpacityById(current => ({ ...current, [selected.id]: value }))
                     }}
                   />
                 </label>

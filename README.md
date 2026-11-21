@@ -30,7 +30,8 @@ npm run test:e2e
 ## Explore
 - Explore is the default screen and centers the interactive 3D viewport with a synchronized structure reference and index.
 - The current model contains only the frontal bone, left and right zygomatic bones, left and right maxillae, and mandible. It is not a complete skull or a full-body anatomy model.
-- Structures can be selected in the model or index, searched by name or identifier, hidden/restored, isolated, and made transparent.
+- Structures can be selected in the model or index, searched by name or
+  identifier, hidden/restored, isolated, and adjusted by opacity.
 - System and region filters are derived from the anatomy records currently available.
 - Orbit the model by dragging, zoom with the mouse wheel, and pan with right-drag. Accessible camera reset, zoom, wireframe, and label controls are in the viewport.
 - Loading progress, individual asset failures, retry, and WebGL recovery guidance are supported.

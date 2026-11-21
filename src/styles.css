@@ -596,10 +596,10 @@ button:focus-visible, select:focus-visible, input:focus-visible {
 .structure-actions { display: flex; gap: 8px; }
 .structure-actions .tool-button { flex: 1; min-width: 0; }
 .structure-actions .control-active { border-color: var(--cyan); background: #132d42; color: #b6f2f6; }
-.transparency-control { display: grid; gap: 10px; margin-top: 18px; color: var(--secondary); font-size: 14px; }
-.transparency-control span { display: flex; justify-content: space-between; gap: 8px; }
-.transparency-control strong { color: var(--text); font-weight: 600; }
-.transparency-control input { width: 100%; margin: 0; accent-color: var(--cyan); }
+.opacity-control { display: grid; gap: 10px; margin-top: 18px; color: var(--secondary); font-size: 14px; }
+.opacity-control span { display: flex; justify-content: space-between; gap: 8px; }
+.opacity-control strong { color: var(--text); font-weight: 600; }
+.opacity-control input { width: 100%; margin: 0; accent-color: var(--cyan); }
 .interaction-status { margin: 12px 0 0; color: var(--secondary); font-size: 13px; line-height: 1.55; }
 .show-all-button {
   width: 100%;

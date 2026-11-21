@@ -14,7 +14,7 @@ type Props = {
   matchedStructureCount: number
   hiddenCount: number
   isolationId: AnatomyId | null
-  transparencyById: Partial<Record<AnatomyId, number>>
+  opacityById: Partial<Record<AnatomyId, number>>
 }
 
 type MeshAssetState =
@@ -34,7 +34,7 @@ type BoneProps = {
   selectedId: AnatomyId | null
   onSelect: (id: AnatomyId) => void
   wire: boolean
-  transparency: number
+  opacity: number
 }
 
 type AssetLoaderProps = {
@@ -188,7 +188,7 @@ function CameraDistance({ distance }: { distance: number }) {
   return null
 }
 
-function Bone({ structure, association, source, selectedId, onSelect, wire, transparency }: BoneProps) {
+function Bone({ structure, association, source, selectedId, onSelect, wire, opacity }: BoneProps) {
   const [hovered, setHovered] = useState(false)
   const active = selectedId === structure.id
   const { object, materials } = useMemo(() => {
@@ -232,11 +232,11 @@ function Bone({ structure, association, source, selectedId, onSelect, wire, tran
     materials.forEach((material) => {
       material.color.set(active ? '#a9eff1' : hovered ? '#f0f4fa' : '#d8dcd5')
       material.emissive.set(active ? '#154a52' : '#000000')
-      material.emissiveIntensity = active ? transparency <= 40 ? 0.7 : 0.42 : 0
-      material.opacity = transparency / 100
-      material.depthWrite = transparency === 100
-      if (material.transparent !== (transparency < 100)) {
-        material.transparent = transparency < 100
+      material.emissiveIntensity = active ? opacity <= 40 ? 0.7 : 0.42 : 0
+      material.opacity = opacity / 100
+      material.depthWrite = opacity === 100
+      if (material.transparent !== (opacity < 100)) {
+        material.transparent = opacity < 100
         material.needsUpdate = true
       }
       if (material.wireframe !== wire) {
@@ -244,7 +244,7 @@ function Bone({ structure, association, source, selectedId, onSelect, wire, tran
         material.needsUpdate = true
       }
     })
-  }, [active, hovered, materials, transparency, wire])
+  }, [active, hovered, materials, opacity, wire])
 
   return <group
     name={association.id}
@@ -267,7 +267,7 @@ function Bone({ structure, association, source, selectedId, onSelect, wire, tran
 }
 
 function SkullModel({ models, selectedId, onSelect, wire }: {
-  models: { structure: AnatomyStructure; association: MeshAssociation; model: THREE.Group; transparency: number }[]
+  models: { structure: AnatomyStructure; association: MeshAssociation; model: THREE.Group; opacity: number }[]
   selectedId: AnatomyId | null
   onSelect: (id: AnatomyId) => void
   wire: boolean
@@ -275,7 +275,7 @@ function SkullModel({ models, selectedId, onSelect, wire }: {
   // Convert the source's Z-up millimeter coordinates to the scene's Y-up centimeter scale.
   return <group scale={0.01} rotation={[-Math.PI / 2, 0, 0]}>
     <group position={sourceOffset}>
-      {models.map(({ structure, association, model, transparency }) => <Bone
+      {models.map(({ structure, association, model, opacity }) => <Bone
         key={association.id}
         structure={structure}
         association={association}
@@ -283,7 +283,7 @@ function SkullModel({ models, selectedId, onSelect, wire }: {
         selectedId={selectedId}
         onSelect={onSelect}
         wire={wire}
-        transparency={transparency}
+        opacity={opacity}
       />)}
     </group>
   </group>
@@ -307,7 +307,7 @@ export default function Viewport({
   matchedStructureCount,
   hiddenCount,
   isolationId,
-  transparencyById,
+  opacityById,
 }: Props) {
   const [wire, setWire] = useState(false)
   const [labels, setLabels] = useState(true)
@@ -348,7 +348,7 @@ export default function Viewport({
   })
   const readyModels = loadedModels
     .filter(({ structure }) => visibleStructureIds.has(structure.id))
-    .map(record => ({ ...record, transparency: transparencyById[record.structure.id] ?? 100 }))
+    .map(record => ({ ...record, opacity: opacityById[record.structure.id] ?? 100 }))
   const failures = Array.from(anatomyCatalog.meshAssociationsById.values()).flatMap((record) => {
     const state = assetStates[record.association.id]
     return isFailure(state) ? [{ ...record, state }] : []
