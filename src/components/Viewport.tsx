@@ -10,6 +10,7 @@ type Props = {
   system: string
   region: string
   challenge: boolean
+  challengeMode: 'identification' | 'reverse'
   selectedId: AnatomyId | null
   onSelect: (id: AnatomyId | null) => void
   visibleStructureIds: ReadonlySet<AnatomyId>
@@ -318,6 +319,7 @@ export default function Viewport({
   system,
   region,
   challenge,
+  challengeMode,
   selectedId,
   onSelect,
   visibleStructureIds,
@@ -380,6 +382,9 @@ export default function Viewport({
       return next
     })
   }
+  const adjustZoom = (amount: number) => {
+    setZoom(distance => Math.min(8.5, Math.max(3.1, Number((distance + amount).toFixed(2)))))
+  }
   const showLoadStatus = webgl.status === 'available' && (pendingCount > 0 || failures.length > 0)
   const webglFallback = webgl.status === 'unavailable'
     ? <div className="model-render-fallback" role="alert">
@@ -402,6 +407,7 @@ export default function Viewport({
       data-visible-count={visibleStructureIds.size}
       data-selected-id={selectedId ?? ''}
       data-isolation-id={isolationId ?? ''}
+      data-camera-distance={zoom}
       data-model-ready={webgl.status === 'available' && readyCount === meshCount}
     >
       <div className="stage-grid" />
@@ -449,7 +455,7 @@ export default function Viewport({
         <div className="view-controls">
           <button onClick={() => {setResetKey(value => value + 1); setZoom(4.7)}} title="Reset camera"><RotateCcw size={15}/></button>
           <span className="control-divider"/>
-          <button onClick={() => setZoom(value => Math.max(3.1, value - 0.35))} title="Zoom in">＋</button><button onClick={() => setZoom(value => Math.min(8.5, value + 0.35))} title="Zoom out">−</button>
+          <button onClick={() => adjustZoom(-0.35)} title="Zoom in">＋</button><button onClick={() => adjustZoom(0.35)} title="Zoom out">−</button>
           <span className="control-divider"/>
           <button className={wire ? 'active' : ''} onClick={() => setWire(value => !value)} title="Toggle wireframe"><Layers3 size={15}/></button>
           <button className={labels ? 'active' : ''} onClick={() => setLabels(value => !value)} title="Toggle labels">{labels ? <Eye size={15}/> : <EyeOff size={15}/>}</button>
@@ -478,6 +484,10 @@ export default function Viewport({
         <span><kbd>DRAG</kbd> ORBIT</span><span><kbd>SCROLL</kbd> ZOOM</span><span><kbd>RIGHT DRAG</kbd> PAN</span><span className="footer-right">CAMERA · ORBIT CONTROLS</span>
       </>}
     </div>
-    {challenge && <div className="challenge-overlay"><span className="challenge-kicker">ACTIVE IDENTIFICATION</span><strong>Click a bone on the 3D model.</strong><span>Selected: {selected?.name ?? 'None'}</span></div>}
+    {challenge && <div className="challenge-overlay">
+      <span className="challenge-kicker">{challengeMode === 'identification' ? 'STRUCTURE IDENTIFICATION' : 'REVERSE IDENTIFICATION'}</span>
+      <strong>Challenge rounds are not available in this preview yet.</strong>
+      <span>Selected: {selected?.name ?? 'None'}</span>
+    </div>}
   </section>
 }

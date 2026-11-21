@@ -18,6 +18,11 @@ export default function App() {
   const [system, setSystem] = useState('All systems')
   const [region, setRegion] = useState('Whole body')
   const [difficulty, setDifficulty] = useState('Intermediate')
+  const [challengeMode, setChallengeMode] = useState<'identification' | 'reverse'>('identification')
+  const [challengeNotice, setChallengeNotice] = useState(false)
+  const [challengeSettingsOpen, setChallengeSettingsOpen] = useState(false)
+  const [questionCount, setQuestionCount] = useState(structures.length)
+  const [timeLimit, setTimeLimit] = useState('Untimed practice')
   const [selectedId, setSelectedId] = useState<AnatomyId | null>(null)
   const selected = selectedId ? anatomyCatalog.structuresById.get(selectedId) : undefined
   const selectStructure = (id: AnatomyId | null) => setSelectedId(current => current === id ? null : id)
@@ -30,8 +35,23 @@ export default function App() {
   const selectedTemporarilyHidden = Boolean(isolationId && selected && isolationId !== selected.id)
   const [showInfo, setShowInfo] = useState(true)
   const [mobileNav, setMobileNav] = useState(false)
-  const [answered, setAnswered] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const questionOptions = Array.from(new Set([Math.min(5, structures.length), structures.length])).sort((a, b) => a - b)
   const filteredStructures = structures.filter(structure => matchesFilters(structure, system, region))
+  const normalizedSearch = searchTerm.trim().toLowerCase()
+  const referenceStructures = filteredStructures.filter(structure => {
+    if (!normalizedSearch) return true
+    const identifiers = [
+      structure.id,
+      structure.system,
+      structure.region,
+      ...(structure.externalIds ?? []).map(identifier => identifier.identifier),
+      ...structure.meshAssociations.map(association => association.sourceMeshId),
+    ]
+    return [structure.name, ...identifiers].some(value => value.toLowerCase().includes(normalizedSearch))
+  })
   const visibleStructureIds = new Set(filteredStructures
     .filter(structure => isolationId ? structure.id === isolationId : !hiddenIds.has(structure.id))
     .map(structure => structure.id))
@@ -58,21 +78,31 @@ export default function App() {
     setHiddenIds(new Set())
     setIsolationId(null)
   }
+  const updateDifficulty = (value: string) => {
+    setDifficulty(value)
+  }
+  const updateChallengeMode = (mode: 'identification' | 'reverse') => {
+    setChallengeMode(mode)
+  }
+  const toggleStructureSearch = () => {
+    if (searchOpen) setSearchTerm('')
+    setSearchOpen(!searchOpen)
+  }
 
   return <div className="app-shell">
     <aside className={`sidebar ${mobileNav ? 'mobile-open' : ''}`}>
-      <div className="brand"><div className="brand-mark"><Activity size={20}/></div><div><div className="brand-name">ANATOMY<span>®</span></div><div className="brand-sub">ANATOMICAL TRAINING SYSTEM</div></div><button className="mobile-close" onClick={() => setMobileNav(false)}><X size={18}/></button></div>
+      <div className="brand"><div className="brand-mark"><Activity size={20}/></div><div><div className="brand-name">ANATOMY<span>®</span></div><div className="brand-sub">ANATOMICAL TRAINING SYSTEM</div></div><button className="mobile-close" aria-label="Close menu" onClick={() => setMobileNav(false)}><X size={18}/></button></div>
       <div className="workspace-tag">WORKSPACE <span>01</span></div>
       <nav className="main-nav">{nav.map(({name, icon: Icon}) => <button key={name} className={`nav-item ${tab === name ? 'selected' : ''}`} onClick={() => {setTab(name); setMobileNav(false)}}><Icon size={17}/><span>{name}</span>{name === 'Challenge' && <i className="nav-live"/>}</button>)}</nav>
       <div className="sidebar-rule"/>
       <div className="workspace-tag">LIBRARY</div>
-      <button className="nav-item" onClick={() => setTab('Explore')}><BookOpen size={17}/><span>Atlas reference</span></button>
-      <button className="nav-item" onClick={() => setTab('Explore')}><Layers size={17}/><span>Systems & regions</span></button>
+      <button className="nav-item" onClick={() => {setTab('Explore'); setMobileNav(false)}}><BookOpen size={17}/><span>Atlas reference</span></button>
+      <button className="nav-item" onClick={() => {setTab('Explore'); setMobileNav(false)}}><Layers size={17}/><span>Systems & regions</span></button>
       <div className="sidebar-bottom"><div className="profile-card"><div className="avatar">A</div><div className="profile-copy"><strong>ANATOMY STUDENT</strong><span>Personal workspace</span></div><Settings2 size={16}/></div><div className="version">BUILD 0.1.0 <span>PREVIEW</span></div></div>
     </aside>
 
     <main className="main-area">
-      <header className="topbar"><div className="topbar-left"><button className="mobile-menu" aria-label="Open menu" onClick={() => setMobileNav(true)}><Menu size={19}/></button><div className="breadcrumb">WORKSPACE <ChevronRight size={13}/> <strong>{tab.toUpperCase()}</strong></div></div><div className="topbar-right"><div className="system-status"><span/> SYSTEM OPERATIONAL</div><button className="top-icon" title="Help"><CircleHelp size={17}/></button><div className="top-avatar">A</div></div></header>
+      <header className="topbar"><div className="topbar-left"><button className="mobile-menu" aria-label="Open menu" onClick={() => setMobileNav(true)}><Menu size={19}/></button><div className="breadcrumb">WORKSPACE <ChevronRight size={13}/> <strong>{tab.toUpperCase()}</strong></div></div><div className="topbar-right"><div className="system-status"><span/> SYSTEM OPERATIONAL</div><button className="top-icon" aria-label="Help" title="Help" onClick={() => setHelpOpen(true)}><CircleHelp size={17}/></button><div className="top-avatar">A</div></div></header>
 
       <div className="page-content">
         <div className="page-heading"><div><div className="eyebrow"><span className="eyebrow-line"/> PERFORMANCE LABORATORY</div><h1>{tab === 'Challenge' ? 'Identification challenge' : tab === 'Explore' ? 'Anatomical atlas' : tab === 'Progress' ? 'Performance overview' : 'Your workspace'}</h1><p>{tab === 'Challenge' ? 'Precision, recognition, speed. Train your anatomical knowledge.' : 'A focused environment for learning and measuring anatomical knowledge.'}</p></div><div className="session-chip"><span className="session-dot"/> SESSION READY <span className="chip-divider"/> <Command size={13}/> 01</div></div>
@@ -84,6 +114,7 @@ export default function App() {
               system={system}
               region={region}
               challenge={tab === 'Challenge'}
+              challengeMode={challengeMode}
               selectedId={selectedId}
               onSelect={selectStructure}
               visibleStructureIds={visibleStructureIds}
@@ -97,13 +128,26 @@ export default function App() {
 
           {showInfo && <aside className="right-panel">
             {tab === 'Challenge' ? <>
-              <div className="panel-header"><div><div className="panel-overline">CHALLENGE CONFIGURATION</div><h2>Training protocol</h2></div><button className="panel-more"><Settings2 size={16}/></button></div>
-              <div className="panel-section"><div className="field-label">DIFFICULTY</div><div className="difficulty-options">{['Beginner','Intermediate','Advanced','Expert'].map(d => <button key={d} onClick={() => setDifficulty(d)} className={difficulty === d ? 'chosen' : ''}>{d}</button>)}</div></div>
-              <div className="panel-section"><div className="field-label">CHALLENGE MODE</div><div className="mode-card active-mode"><div className="mode-icon"><Crosshair size={17}/></div><div><strong>Structure identification</strong><span>Locate the named structure</span></div><div className="radio-dot"/></div><div className="mode-card"><div className="mode-icon muted"><Sparkles size={17}/></div><div><strong>Reverse identification</strong><span>Name the highlighted structure</span></div></div></div>
-              <div className="panel-section"><div className="field-label">SESSION PARAMETERS</div><div className="parameter-row"><span>Questions</span><strong>20 structures</strong></div><div className="parameter-row"><span>Time limit</span><strong>Untimed practice</strong></div><div className="parameter-row"><span>Feedback</span><strong>Immediate</strong></div></div>
-              <div className="challenge-start"><button onClick={() => setAnswered(false)} className="start-button"><span>START CHALLENGE</span><ChevronRight size={17}/></button><div className="start-note"><ShieldCheck size={13}/> RESULTS SAVED TO PERSONAL RECORDS</div></div>
+              <div className="panel-header"><div><div className="panel-overline">CHALLENGE CONFIGURATION</div><h2>Training protocol</h2></div><button className="panel-more" aria-label="Toggle challenge settings" aria-expanded={challengeSettingsOpen} onClick={() => setChallengeSettingsOpen(value => !value)}><Settings2 size={16}/></button></div>
+              {challengeSettingsOpen && <div className="challenge-settings" aria-label="Challenge settings">
+                <label><span>QUESTIONS</span><select aria-label="Question count" value={questionCount} onChange={event => {setQuestionCount(Number(event.target.value)); setChallengeNotice(false)}}>
+                  {questionOptions.map(count => <option key={count} value={count}>{count} structures</option>)}
+                </select></label>
+                <label><span>TIME LIMIT</span><select aria-label="Time limit" value={timeLimit} onChange={event => {setTimeLimit(event.target.value); setChallengeNotice(false)}}><option>Untimed practice</option><option>5 minutes</option><option>10 minutes</option></select></label>
+              </div>}
+              <div className="panel-section"><div className="field-label">DIFFICULTY</div><div className="difficulty-options">{['Beginner','Intermediate','Advanced','Expert'].map(d => <button key={d} aria-pressed={difficulty === d} onClick={() => {updateDifficulty(d); setChallengeNotice(false)}} className={difficulty === d ? 'chosen' : ''}>{d}</button>)}</div></div>
+              <div className="panel-section"><div className="field-label">CHALLENGE MODE</div>
+              <button className={`mode-card ${challengeMode === 'identification' ? 'active-mode' : ''}`} aria-pressed={challengeMode === 'identification'} onClick={() => {updateChallengeMode('identification'); setChallengeNotice(false)}}><span className="mode-icon"><Crosshair size={17}/></span><span className="mode-copy"><strong>Structure identification</strong><span>Locate the named structure</span></span><span className={`radio-dot ${challengeMode === 'identification' ? '' : 'radio-dot-hidden'}`}/></button>
+              <button className={`mode-card ${challengeMode === 'reverse' ? 'active-mode' : ''}`} aria-pressed={challengeMode === 'reverse'} onClick={() => {updateChallengeMode('reverse'); setChallengeNotice(false)}}><span className="mode-icon muted"><Sparkles size={17}/></span><span className="mode-copy"><strong>Reverse identification</strong><span>Name the highlighted structure</span></span><span className={`radio-dot ${challengeMode === 'reverse' ? '' : 'radio-dot-hidden'}`}/></button>
+              </div>
+              <div className="panel-section"><div className="field-label">SESSION PARAMETERS</div><div className="parameter-row"><span>Questions</span><strong>{questionCount} structures</strong></div><div className="parameter-row"><span>Time limit</span><strong>{timeLimit}</strong></div><div className="parameter-row"><span>Feedback</span><strong>Immediate</strong></div></div>
+              <div className="challenge-start">
+              {challengeNotice && <div className="challenge-start-status" role="status">Challenge rounds are not available in this preview yet. Use Explore to identify structures.</div>}
+              <button onClick={() => setChallengeNotice(true)} className="start-button"><span>START CHALLENGE</span><ChevronRight size={17}/></button>
+              <div className="start-note"><ShieldCheck size={13}/>CHALLENGE GAMEPLAY IS NOT AVAILABLE IN THIS PREVIEW</div>
+              </div>
             </> : <>
-              <div className="panel-header"><div><div className="panel-overline">STRUCTURE REFERENCE</div><h2>{selected?.name ?? 'Select a bone'}</h2></div><button className="panel-more"><Search size={16}/></button></div>
+              <div className="panel-header"><div><div className="panel-overline">STRUCTURE REFERENCE</div><h2>{selected?.name ?? 'Select a bone'}</h2></div><button className="panel-more" aria-label={searchOpen ? 'Close structure search' : 'Search structures'} aria-expanded={searchOpen} onClick={toggleStructureSearch}><Search size={16}/></button></div>
               {selected ? <>
                 <div className="structure-tags"><span>{selected.system}</span><span>{selected.region}</span><span>{selected.laterality}</span></div>
                 <div className="panel-section"><div className="field-label">ANATOMY IDENTIFIERS</div><p className="info-copy">Anatomy ID: {selected.id}<br/>{selected.externalIds?.map(identifier => <span key={`${identifier.system}:${identifier.identifier}`}>{identifier.system}: {identifier.identifier}<br/></span>)}{selected.meshAssociations.map(association => <span key={association.id}>{association.source} mesh: {association.sourceMeshId}<br/></span>)}</p></div>
@@ -150,8 +194,9 @@ export default function App() {
                 <button className="show-all-button" onClick={showAllStructures} disabled={hiddenIds.size === 0 && isolationId === null}>SHOW ALL STRUCTURES</button>
               </div>
               <div className="panel-section structure-index-section">
-                <div className="structure-index-heading"><div className="field-label">QUICK STRUCTURE INDEX <span>{filteredStructures.length}</span></div></div>
-                {filteredStructures.length > 0 ? filteredStructures.map(structure => {
+                <div className="structure-index-heading"><div className="field-label">QUICK STRUCTURE INDEX <span>{referenceStructures.length}</span></div></div>
+                {searchOpen && <label className="structure-search"><span>SEARCH ANATOMY</span><input aria-label="Search structures" autoFocus value={searchTerm} onChange={event => setSearchTerm(event.target.value)} placeholder="Name, ID, or mesh"/></label>}
+                {referenceStructures.length > 0 ? referenceStructures.map(structure => {
                   const isolated = isolationId === structure.id
                   const hiddenByIsolation = isolationId !== null && !isolated
                   const hidden = hiddenIds.has(structure.id)
@@ -171,7 +216,7 @@ export default function App() {
                       {displayed ? <Eye size={14}/> : <EyeOff size={14}/>}
                     </button>
                   </div>
-                }) : <p className="filter-empty-message" role="status">No structures match the selected filters.</p>}
+                }) : <p className="filter-empty-message" role="status">{normalizedSearch ? 'No structures match your search.' : 'No structures match the selected filters.'}</p>}
               </div>
             </>}
           </aside>}
@@ -179,5 +224,13 @@ export default function App() {
         <footer className="page-footer"><span>ANATOMY TRAINING SYSTEM <b>·</b> VISUAL PROTOTYPE</span><span>DESIGNED FOR PRECISION LEARNING <b>·</b> V0.1.0</span></footer>
       </div>
     </main>
+    {helpOpen && <div className="help-dialog-backdrop" onClick={() => setHelpOpen(false)}>
+      <section className="help-dialog" role="dialog" aria-modal="true" aria-labelledby="help-title" onClick={event => event.stopPropagation()} onKeyDown={event => {if(event.key === 'Escape') setHelpOpen(false)}}>
+        <div className="help-dialog-header"><div><div className="panel-overline">ANATOMY WORKSPACE</div><h2 id="help-title">Quick guide</h2></div><button className="panel-more" aria-label="Close help" autoFocus onClick={() => setHelpOpen(false)}><X size={16}/></button></div>
+        <p>Select structures from the model or reference index. Use the system and region filters to narrow the anatomy shown.</p>
+        <p>Drag to orbit, scroll to zoom, and right-drag to pan. Structure controls support hide/show, isolation, and transparency.</p>
+        <button className="tool-button help-close-button" onClick={() => setHelpOpen(false)}>CLOSE HELP</button>
+      </section>
+    </div>}
   </div>
 }

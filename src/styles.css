@@ -53,3 +53,26 @@
 .structure-visibility-button:disabled{opacity:.38;cursor:default}
 .filter-empty-message{margin:4px 0 0;color:#899ba1;font-size:9px;line-height:1.6}
 @media(max-width:560px){.structure-actions{flex-wrap:wrap}.structure-actions .tool-button{font-size:7px}.scene-mode-indicator{top:51px;right:8px}.structure-visibility-label{font-size:5px}}
+@media(max-width:1020px){.workspace-grid{grid-template-columns:minmax(0,1fr)}}
+.mode-card{width:100%;background:transparent;color:inherit;text-align:left;font:inherit;cursor:pointer}
+.mode-card:hover{background:#17262c}
+.mode-copy{display:grid;gap:3px;flex:1}
+.mode-card .mode-icon{color:#a5d1ce}
+.mode-card .mode-icon.muted{color:#75868e}
+.mode-copy strong{font-size:9px;font-weight:700}
+.mode-copy>span{font-size:8px;color:#82939a}
+.radio-dot-hidden{opacity:0}
+.challenge-settings{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);background:#0d151a}
+.challenge-settings label,.structure-search{display:grid;gap:6px;min-width:0}
+.challenge-settings label>span,.structure-search>span{font:7px var(--mono);letter-spacing:.1em;color:#81949a}
+.challenge-settings select,.structure-search input{width:100%;min-width:0;padding:7px 8px;border:1px solid #2b3d45;border-radius:4px;background:#121d23;color:#c8d6d9;font-size:9px}
+.challenge-start-status{margin:0 0 9px;padding:8px;border:1px solid #42645d;border-radius:4px;background:#152720;color:#b5d5c7;text-align:center;font-size:9px;line-height:1.5}
+.structure-search{margin:2px 0 8px}
+.help-dialog-backdrop{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:20px;background:#05090dcc;backdrop-filter:blur(4px)}
+.help-dialog{width:min(440px,100%);padding:20px;border:1px solid #36515a;border-radius:9px;background:#111b21;box-shadow:0 20px 70px #000b}
+.help-dialog-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:15px}
+.help-dialog h2{margin:6px 0 0;font-size:16px}
+.help-dialog p{color:#a7b6bb;font-size:11px;line-height:1.7}
+.help-close-button{margin-top:16px}
+@media(max-width:560px){.challenge-settings{grid-template-columns:1fr}.help-dialog{padding:16px}}
+@media(max-width:1100px) and (min-width:1021px){.toolbar-selects{gap:12px}.toolbar .tool-button{padding:7px 8px}}

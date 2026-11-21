@@ -32,6 +32,8 @@ npm run test:e2e
 - Each source mesh remains independently selectable, with hover and teal selection highlights.
 - The atlas reference panel synchronizes selection with the viewport and provides per-structure visibility, isolation, and transparency controls.
 - System and region filters update both the visible anatomy and the reference index.
+- The reference search, workspace help, challenge settings, and mode/difficulty selectors respond to user input.
+- Challenge setup is configurable, but challenge rounds and result persistence are not implemented in this preview; the start control explains this limitation.
 - Application-owned anatomy IDs are independent of source meshes; FMA identifiers remain external references in the structure panel.
 - Each anatomy record declares its mesh associations, including source, source mesh ID, format, and URL; association lookup does not depend on array position.
 - Anatomy records include laterality, system, region, descriptions, and optional relationship and educational metadata without placeholder records.

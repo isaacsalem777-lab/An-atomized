@@ -80,7 +80,16 @@ test('selection, camera controls, and viewport toggles respond to input', async 
   await expect(labels).not.toHaveClass(/active/)
 
   await page.locator('.view-controls button[title="Zoom in"]').click()
+  await expect(page.locator('.model-stage')).toHaveAttribute('data-camera-distance', '4.35')
+  await page.locator('.view-controls button[title="Zoom out"]').click()
+  await expect(page.locator('.model-stage')).toHaveAttribute('data-camera-distance', '4.7')
+  await page.locator('.view-controls button[title="Zoom in"]').click()
   await page.locator('.view-controls button[title="Reset camera"]').click()
+  await expect(page.locator('.model-stage')).toHaveAttribute('data-camera-distance', '4.7')
+  await page.locator('.view-controls button[title="Zoom in"]').click()
+  await expect(page.locator('.model-stage')).toHaveAttribute('data-camera-distance', '4.35')
+  await page.getByRole('button', { name: 'Reset camera' }).first().click()
+  await expect(page.locator('.model-stage')).toHaveAttribute('data-camera-distance', '4.7')
 })
 
 test('navigation adapts between desktop and mobile layouts', async ({ page }) => {
