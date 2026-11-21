@@ -52,7 +52,7 @@ test('isolates every structure and restores the previous visibility configuratio
   await expect(stage).toHaveAttribute('data-visible-count', '6')
 })
 
-test('synchronizes panel and viewport selection and applies system and region filters', async ({ page }) => {
+test('synchronizes panel selection and filters using the available anatomy catalog', async ({ page }) => {
   await openAtlas(page)
   const stage = page.locator('.model-stage')
   const canvas = page.locator('.viewport canvas')
@@ -65,16 +65,10 @@ test('synchronizes panel and viewport selection and applies system and region fi
   await expect(page.locator('.right-panel h2')).toHaveText('Mandible')
   await expect(stage).toHaveAttribute('data-selected-id', 'anatomy:bone:mandible')
 
-  await page.getByLabel('System filter').selectOption('Muscular')
-  await expect(stage).toHaveAttribute('data-visible-count', '0')
-  await expect(page.locator('.structure-index-section')).toContainText('No structures match the selected filters.')
-  await expect(stage).toHaveAttribute('data-selected-id', '')
-
   await page.getByLabel('System filter').selectOption('Skeletal')
   await expect(stage).toHaveAttribute('data-visible-count', '6')
-  await page.getByLabel('Region filter').selectOption('Thorax')
-  await expect(stage).toHaveAttribute('data-visible-count', '0')
-  await expect(stage).toContainText('No structures match the selected filters.')
+  await expect(page.getByLabel('Region filter').locator('option')).toHaveText(['All regions', 'Cranium'])
+  await expect(stage).toHaveAttribute('data-visible-count', '6')
   await page.getByLabel('Region filter').selectOption('Cranium')
   await expect(stage).toHaveAttribute('data-visible-count', '6')
 
@@ -96,7 +90,7 @@ test('adjusts transparency while retaining selection on a transparent 3D structu
   await transparency.focus()
   await transparency.press('Home')
   await expect(transparency).toHaveValue('15')
-  await expect(page.locator('.right-panel')).toContainText('TRANSPARENCY 15%')
+  await expect(page.locator('.right-panel')).toContainText('Transparency 15%')
 
   await page.getByRole('button', { name: 'Select Frontal bone' }).click()
   const bounds = await canvas.boundingBox()

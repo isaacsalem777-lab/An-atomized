@@ -19,15 +19,13 @@ test('loads and independently selects all six source bones', async ({ page }) =>
     }
   `)
   await page.goto('/')
-  await expect(page).toHaveTitle('ANATOMY — Training Workstation')
-  await expect(page.getByRole('heading', { name: 'Identification challenge' })).toBeVisible()
+  await expect(page).toHaveTitle('ANATOMY — Anatomy Explorer')
+  await expect(page.getByRole('heading', { name: 'Explore anatomy' })).toBeVisible()
   await expect(page.locator('.viewport-footer [role="status"]')).toContainText('Loading anatomical meshes')
 
   const canvas = page.locator('.viewport canvas')
   await expect(canvas).toBeVisible()
   await expect(page.locator('.model-stage')).toHaveAttribute('data-model-ready', 'true')
-  await page.getByRole('button', { name: 'Explore', exact: true }).click()
-
   const bounds = await canvas.boundingBox()
   if (!bounds) {
     throw new Error('The 3D canvas has no visible bounds')
@@ -46,8 +44,8 @@ test('loads and independently selects all six source bones', async ({ page }) =>
 
   const last = structures[structures.length - 1]
   await canvas.click({ position: { x: bounds.width * last.x, y: bounds.height * last.y } })
-  await expect(page.locator('.right-panel h2')).toHaveText('Select a bone')
-  await expect(page.locator('.right-panel')).toContainText('NO STRUCTURE SELECTED')
+  await expect(page.locator('.right-panel h2')).toHaveText('Select a structure')
+  await expect(page.locator('.right-panel')).toContainText('Select a bone in the model or choose one from the structure index.')
 })
 
 test('selection, camera controls, and viewport toggles respond to input', async ({ page }) => {
@@ -60,9 +58,11 @@ test('selection, camera controls, and viewport toggles respond to input', async 
     throw new Error('The 3D canvas has no visible bounds')
   }
   await canvas.click({ position: { x: canvasBounds.width / 2, y: canvasBounds.height * 0.8 } })
-  await expect(page.locator('.challenge-overlay')).toContainText('Selected: Mandible')
+  await expect(page.locator('.model-stage')).toHaveAttribute('data-selected-id', 'anatomy:bone:mandible')
+  await expect(page.locator('.right-panel h2')).toHaveText('Mandible')
   await canvas.click({ position: { x: canvasBounds.width / 2, y: canvasBounds.height * 0.8 } })
-  await expect(page.locator('.challenge-overlay')).toContainText('Selected: None')
+  await expect(page.locator('.model-stage')).toHaveAttribute('data-selected-id', '')
+  await expect(page.locator('.right-panel h2')).toHaveText('Select a structure')
 
   const beforeOrbit = await canvas.screenshot()
   await page.mouse.move(canvasBounds.x + canvasBounds.width / 2, canvasBounds.y + canvasBounds.height / 2)
@@ -88,7 +88,7 @@ test('selection, camera controls, and viewport toggles respond to input', async 
   await expect(page.locator('.model-stage')).toHaveAttribute('data-camera-distance', '4.7')
   await page.locator('.view-controls button[title="Zoom in"]').click()
   await expect(page.locator('.model-stage')).toHaveAttribute('data-camera-distance', '4.35')
-  await page.getByRole('button', { name: 'Reset camera' }).first().click()
+  await page.getByRole('button', { name: 'Reset camera' }).click()
   await expect(page.locator('.model-stage')).toHaveAttribute('data-camera-distance', '4.7')
 })
 
@@ -110,7 +110,7 @@ test('navigation adapts between desktop and mobile layouts', async ({ page }) =>
   await expect(page.locator('.sidebar')).toHaveClass(/mobile-open/)
 
   await page.getByRole('button', { name: 'Explore', exact: true }).click()
-  await expect(page.getByRole('heading', { name: 'Anatomical atlas' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Explore anatomy' })).toBeVisible()
   await expect(page.locator('.sidebar')).not.toHaveClass(/mobile-open/)
   const mobileCenter = await page.locator('.center-column').boundingBox()
   const mobilePanel = await page.locator('.right-panel').boundingBox()
@@ -146,7 +146,7 @@ test('reports a missing OBJ, keeps other bones interactive, and retries the fail
   const bounds = await canvas.boundingBox()
   if (!bounds) throw new Error('The 3D canvas has no visible bounds')
   await canvas.click({ position: { x: bounds.width / 2, y: bounds.height * 0.8 } })
-  await expect(page.locator('.challenge-overlay')).toContainText('Selected: Mandible')
+  await expect(page.locator('.model-stage')).toHaveAttribute('data-selected-id', 'anatomy:bone:mandible')
 
   shouldFail = false
   await page.getByRole('button', { name: 'Retry failed meshes' }).click()
@@ -174,7 +174,7 @@ test('reports invalid OBJ data without losing the remaining bones', async ({ pag
   const bounds = await canvas.boundingBox()
   if (!bounds) throw new Error('The 3D canvas has no visible bounds')
   await canvas.click({ position: { x: bounds.width / 2, y: bounds.height * 0.8 } })
-  await expect(page.locator('.challenge-overlay')).toContainText('Selected: Mandible')
+  await expect(page.locator('.model-stage')).toHaveAttribute('data-selected-id', 'anatomy:bone:mandible')
 })
 
 test('reports an OBJ server failure distinctly from missing or invalid data', async ({ page }) => {
@@ -209,5 +209,5 @@ test('explains unavailable WebGL 2 and keeps non-3D navigation available', async
   await expect(page.locator('.viewport canvas')).toHaveCount(0)
 
   await page.getByRole('button', { name: 'Explore', exact: true }).click()
-  await expect(page.getByRole('heading', { name: 'Anatomical atlas' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Explore anatomy' })).toBeVisible()
 })

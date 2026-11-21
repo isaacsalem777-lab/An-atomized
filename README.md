@@ -1,6 +1,6 @@
-# ANATOMY — Stage 2: Interactive Segmented Skull
+# ANATOMY — Interactive Skull Explorer
 
-A React + TypeScript anatomy-learning prototype with a live WebGL viewport using six independently selectable BodyParts3D skull meshes.
+A React + TypeScript anatomy exploration prototype with a live WebGL viewport using six independently selectable BodyParts3D skull meshes.
 
 ## Requirements
 - Node.js 20.19+ (or a current LTS release)
@@ -27,22 +27,15 @@ The browser smoke tests use Playwright and Chromium. Install the browser once wi
 npm run test:e2e
 ```
 
-## What's new in Stage 2
-- Replaced the primitive skull blockout with the frontal bone, left and right zygomatic bones, left and right maxillae, and mandible.
-- Each source mesh remains independently selectable, with hover and teal selection highlights.
-- The atlas reference panel synchronizes selection with the viewport and provides per-structure visibility, isolation, and transparency controls.
-- System and region filters update both the visible anatomy and the reference index.
-- The reference search, workspace help, challenge settings, and mode/difficulty selectors respond to user input.
-- Challenge setup is configurable, but challenge rounds and result persistence are not implemented in this preview; the start control explains this limitation.
-- Application-owned anatomy IDs are independent of source meshes; FMA identifiers remain external references in the structure panel.
-- Each anatomy record declares its mesh associations, including source, source mesh ID, format, and URL; association lookup does not depend on array position.
-- Anatomy records include laterality, system, region, descriptions, and optional relationship and educational metadata without placeholder records.
-- Source mesh IDs and FMA identifiers are shown in the structure reference panel.
-- The viewport reports model-loading progress and isolates missing, invalid, or failed OBJ assets; failed meshes can be retried.
-- WebGL 2 availability is checked before rendering, with recovery guidance if the renderer cannot start.
-- Orbit the skull with left-click drag, zoom with the mouse wheel, and pan with right-click drag.
-- Camera reset and zoom controls are available in the viewport.
-- Existing application layout and reference panel are retained.
+## Explore
+- Explore is the default screen and centers the interactive 3D viewport with a synchronized structure reference and index.
+- The current model contains only the frontal bone, left and right zygomatic bones, left and right maxillae, and mandible. It is not a complete skull or a full-body anatomy model.
+- Structures can be selected in the model or index, searched by name or identifier, hidden/restored, isolated, and made transparent.
+- System and region filters are derived from the anatomy records currently available.
+- Orbit the model by dragging, zoom with the mouse wheel, and pan with right-drag. Accessible camera reset, zoom, wireframe, and label controls are in the viewport.
+- Loading progress, individual asset failures, retry, and WebGL recovery guidance are supported.
+- Challenge and Progress are future destinations. Challenge gameplay and result tracking are not implemented; no performance statistics are displayed.
+- Anatomy records use stable application-owned IDs and explicit mesh associations. FMA identifiers remain external references.
 
 ## Asset provenance and scope
 The six unmodified OBJ source meshes are from BodyParts3D release 4.0. They are centered, rotated, and scaled at render time only; the source geometry is not destructively modified.

@@ -3,14 +3,10 @@ import { Canvas, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js'
-import { Eye, EyeOff, Layers3, Maximize2, Rotate3D, RotateCcw } from 'lucide-react'
+import { Eye, EyeOff, Layers3, Rotate3D, RotateCcw } from 'lucide-react'
 import { anatomyCatalog, type AnatomyId, type AnatomyStructure, type MeshAssociation } from '../data/anatomy'
 
 type Props = {
-  system: string
-  region: string
-  challenge: boolean
-  challengeMode: 'identification' | 'reverse'
   selectedId: AnatomyId | null
   onSelect: (id: AnatomyId | null) => void
   visibleStructureIds: ReadonlySet<AnatomyId>
@@ -316,10 +312,6 @@ function failureLabel(state: MeshAssetState) {
 }
 
 export default function Viewport({
-  system,
-  region,
-  challenge,
-  challengeMode,
   selectedId,
   onSelect,
   visibleStructureIds,
@@ -335,7 +327,6 @@ export default function Viewport({
   const [webgl, setWebgl] = useState<WebGLState>({ status: 'checking' })
   const [assetStates, setAssetStates] = useState(createInitialAssetStates)
   const [retryVersions, setRetryVersions] = useState<Record<string, number>>({})
-  const selected = selectedId ? anatomyCatalog.structuresById.get(selectedId) : undefined
   const updateAssetState = useCallback((id: string, state: MeshAssetState) => {
     setAssetStates((current) => ({ ...current, [id]: state }))
   }, [])
@@ -397,8 +388,8 @@ export default function Viewport({
 
   return <section className="viewport">
     <div className="viewport-top">
-      <div className="viewport-breadcrumb"><span className="live-dot" /> 3D WORKSPACE <span className="slash">/</span> {system.toUpperCase()} <span className="slash">/</span> {region.toUpperCase()}</div>
-      <div className="viewport-top-actions"><span className={`asset-status ${webgl.status === 'unavailable' || failures.length > 0 ? 'asset-unavailable' : 'asset-live'}`}><i /> {topStatus}</span><button className="icon-button" aria-label="Reset camera" onClick={() => {setResetKey(value => value + 1); setZoom(4.7)}} disabled={webgl.status !== 'available'}><Maximize2 size={16}/></button></div>
+      <div className="viewport-breadcrumb"><span className="live-dot" /> 3D viewport</div>
+      <div className="viewport-top-actions"><span className={`asset-status ${webgl.status === 'unavailable' || failures.length > 0 ? 'asset-unavailable' : 'asset-live'}`}><i /> {topStatus}</span></div>
     </div>
     <div
       className="model-stage three-stage"
@@ -450,15 +441,15 @@ export default function Viewport({
         {labels && <div className="model-label bodyparts-label"><span/> SEGMENTED BONES</div>}
         <div className="viewport-caption">
           <span title={attribution}>BodyParts3D · CC BY 4.0</span>
-          <span>SELECTED CRANIAL BONES · NOT FOR CLINICAL USE</span>
+          <span>Six-bone skull subset · not a complete skull or full-body model</span>
         </div>
         <div className="view-controls">
-          <button onClick={() => {setResetKey(value => value + 1); setZoom(4.7)}} title="Reset camera"><RotateCcw size={15}/></button>
+          <button aria-label="Reset camera" onClick={() => {setResetKey(value => value + 1); setZoom(4.7)}} title="Reset camera"><RotateCcw size={15}/></button>
           <span className="control-divider"/>
-          <button onClick={() => adjustZoom(-0.35)} title="Zoom in">＋</button><button onClick={() => adjustZoom(0.35)} title="Zoom out">−</button>
+          <button aria-label="Zoom in" onClick={() => adjustZoom(-0.35)} title="Zoom in">＋</button><button aria-label="Zoom out" onClick={() => adjustZoom(0.35)} title="Zoom out">−</button>
           <span className="control-divider"/>
-          <button className={wire ? 'active' : ''} onClick={() => setWire(value => !value)} title="Toggle wireframe"><Layers3 size={15}/></button>
-          <button className={labels ? 'active' : ''} onClick={() => setLabels(value => !value)} title="Toggle labels">{labels ? <Eye size={15}/> : <EyeOff size={15}/>}</button>
+          <button className={wire ? 'active' : ''} aria-label="Toggle wireframe" aria-pressed={wire} onClick={() => setWire(value => !value)} title="Toggle wireframe"><Layers3 size={15}/></button>
+          <button className={labels ? 'active' : ''} aria-label="Toggle labels" aria-pressed={labels} onClick={() => setLabels(value => !value)} title="Toggle labels">{labels ? <Eye size={15}/> : <EyeOff size={15}/>}</button>
           <span className="control-divider"/><span className="orbit-indicator"><Rotate3D size={14}/></span>
         </div>
       </> : webglFallback}
@@ -484,10 +475,5 @@ export default function Viewport({
         <span><kbd>DRAG</kbd> ORBIT</span><span><kbd>SCROLL</kbd> ZOOM</span><span><kbd>RIGHT DRAG</kbd> PAN</span><span className="footer-right">CAMERA · ORBIT CONTROLS</span>
       </>}
     </div>
-    {challenge && <div className="challenge-overlay">
-      <span className="challenge-kicker">{challengeMode === 'identification' ? 'STRUCTURE IDENTIFICATION' : 'REVERSE IDENTIFICATION'}</span>
-      <strong>Challenge rounds are not available in this preview yet.</strong>
-      <span>Selected: {selected?.name ?? 'None'}</span>
-    </div>}
   </section>
 }
