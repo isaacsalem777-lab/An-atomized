@@ -1,9 +1,32 @@
+import { createHash } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 import { expect, test } from '@playwright/test'
 import { anatomyCatalog, anatomyIds, createAnatomyCatalog, createAnatomyId, structures, type MeshAssociation } from '../src/data/anatomy'
 
-test('uses distinct application IDs and preserves external FMA identifiers', () => {
-  expect(structures).toHaveLength(6)
-  expect(new Set(structures.map((structure) => structure.id)).size).toBe(6)
+const modelDirectory = '../public/assets/anatomy/bodyparts3d/skeleton-3.0/'
+const manifest = JSON.parse(readFileSync(new URL(`${modelDirectory}manifest.json`, import.meta.url), 'utf8')) as {
+  runtime: { bytes: number; sha256: string }
+  structures: { id: string; fma: string; sourceName: string }[]
+}
+
+test('preserves application IDs and maps every structure to the imported source manifest', () => {
+  expect(structures).toHaveLength(242)
+  expect(manifest.structures).toHaveLength(242)
+  expect(structures).toHaveLength(manifest.structures.length)
+  expect(new Set(structures.map((structure) => structure.id)).size).toBe(manifest.structures.length)
+  expect(new Set(structures.flatMap((structure) => structure.meshAssociations.map(({ sourceMeshId }) => sourceMeshId))).size)
+    .toBe(manifest.structures.length)
+
+  manifest.structures.forEach((source) => {
+    const structure = structures.find(({ meshAssociations }) => meshAssociations[0]?.sourceMeshId === source.id)
+    expect(structure).toBeDefined()
+    expect(structure?.sourceName).toBe(source.sourceName)
+    expect(structure?.externalIds).toContainEqual({
+      system: source.fma.startsWith('FMA') ? 'FMA' : 'BodyParts3D',
+      identifier: source.fma,
+    })
+  })
+
   expect(anatomyIds.leftZygomaticBone).not.toBe(anatomyIds.rightZygomaticBone)
   expect(anatomyIds.leftMaxilla).not.toBe(anatomyIds.rightMaxilla)
 
@@ -13,6 +36,18 @@ test('uses distinct application IDs and preserves external FMA identifiers', () 
   expect(rightZygomatic?.laterality).toBe('right')
   expect(leftZygomatic?.externalIds).toContainEqual({ system: 'FMA', identifier: 'FMA52893' })
   expect(rightZygomatic?.externalIds).toContainEqual({ system: 'FMA', identifier: 'FMA52892' })
+  expect(leftZygomatic?.id).toBe('anatomy:bone:zygomatic:left')
+  expect(rightZygomatic?.id).toBe('anatomy:bone:zygomatic:right')
+
+  const nonFmaRecords = structures.filter((structure) => structure.externalIds?.some(({ identifier }) => identifier.startsWith('BP')))
+  expect(nonFmaRecords).toHaveLength(2)
+  expect(nonFmaRecords.every((structure) => structure.externalIds?.some(({ system }) => system === 'BodyParts3D'))).toBe(true)
+})
+
+test('matches the bundled GLB size and checksum recorded in its manifest', () => {
+  const model = readFileSync(new URL(`${modelDirectory}skeleton.glb`, import.meta.url))
+  expect(model.byteLength).toBe(manifest.runtime.bytes)
+  expect(createHash('sha256').update(model).digest('hex')).toBe(manifest.runtime.sha256)
 })
 
 test('resolves multiple mesh associations to the same stable anatomy ID independent of record order', () => {
@@ -38,7 +73,7 @@ test('resolves multiple mesh associations to the same stable anatomy ID independ
     .reverse()
   const catalog = createAnatomyCatalog(records)
 
-  expect(catalog.meshAssociationsById.size).toBe(7)
+  expect(catalog.meshAssociationsById.size).toBe(structures.length + 1)
   expect(catalog.meshAssociationsById.get(originalAssociation.id)?.structure.id).toBe(structure.id)
   expect(catalog.meshAssociationsById.get(replacementAssociation.id)?.structure.id).toBe(structure.id)
   expect(catalog.structuresById.get(structure.id)?.id).toBe('anatomy:bone:zygomatic:left')

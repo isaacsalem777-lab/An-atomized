@@ -1,3 +1,5 @@
+import skeletonStructures from './skeleton-structures.json' with { type: 'json' }
+
 declare const anatomyIdBrand: unique symbol
 export type AnatomyId = string & { readonly [anatomyIdBrand]: true }
 export type Laterality = 'left' | 'right' | 'midline' | 'unpaired'
@@ -46,12 +48,15 @@ export type EducationalMetadata = {
 export type AnatomyStructure = {
   readonly id: AnatomyId
   readonly name: string
+  readonly sourceName?: string
   readonly system: string
   readonly region: string
+  readonly subgroup?: string
   readonly laterality: Laterality
   readonly externalIds?: readonly ExternalIdentifier[]
   readonly meshAssociations: readonly MeshAssociation[]
   readonly description?: string
+  readonly sourceNote?: string
   readonly location?: string
   readonly function?: string
   readonly relationships?: readonly AnatomyRelationship[]
@@ -68,119 +73,105 @@ export type AnatomyCatalog = {
   meshAssociationsById: ReadonlyMap<string, MeshAssociationRecord>
 }
 
-const zygomaticDescription = 'The paired cheek bones form the prominence of the cheeks and contribute to the lateral orbital walls.'
-const maxillaDescription = 'The paired upper jaw bones support the upper teeth and contribute to the floor of each orbit and the walls of the nasal cavity.'
+type SkeletonSourceStructure = {
+  id: string
+  fma: string
+  name: string
+  sourceName: string
+  group: string
+  subgroup?: string
+  description: string
+  note: string
+}
 
-export const structures: readonly AnatomyStructure[] = [
-  {
-    id: anatomyIds.frontalBone,
-    name: 'Frontal bone',
-    system: 'Skeletal',
-    region: 'Cranium',
-    laterality: 'unpaired',
-    externalIds: [{ system: 'FMA', identifier: 'FMA52734' }],
-    meshAssociations: [{
-      id: 'bodyparts3d:FJ3200',
-      source: 'BodyParts3D',
-      sourceMeshId: 'FJ3200',
-      format: 'obj',
-      url: '/assets/anatomy/bodyparts3d/FJ3200.obj',
-    }],
-    description: 'The frontal bone forms the forehead, the roofs of the orbits, and the anterior cranial floor.',
+const legacyAnatomyIds: Readonly<Record<string, AnatomyId>> = {
+  FMA52734: anatomyIds.frontalBone,
+  FMA52893: anatomyIds.leftZygomaticBone,
+  FMA52892: anatomyIds.rightZygomaticBone,
+  FMA53650: anatomyIds.leftMaxilla,
+  FMA53649: anatomyIds.rightMaxilla,
+  FMA52748: anatomyIds.mandible,
+}
+
+const legacyReference: Readonly<Record<string, Pick<AnatomyStructure, 'location' | 'function'>>> = {
+  FMA52734: {
     location: 'Anterior skull, superior to the orbits and articulating with the parietal bones.',
     function: 'Protects the frontal lobes and contributes to the orbital and cranial cavities.',
   },
-  {
-    id: anatomyIds.leftZygomaticBone,
-    name: 'Left zygomatic bone',
-    system: 'Skeletal',
-    region: 'Cranium',
-    laterality: 'left',
-    externalIds: [{ system: 'FMA', identifier: 'FMA52893' }],
-    meshAssociations: [{
-      id: 'bodyparts3d:FJ3287',
-      source: 'BodyParts3D',
-      sourceMeshId: 'FJ3287',
-      format: 'obj',
-      url: '/assets/anatomy/bodyparts3d/FJ3287.obj',
-    }],
-    description: zygomaticDescription,
+  FMA52893: {
     location: 'Left lateral face, between the maxilla, temporal bone, sphenoid, and frontal bone.',
     function: 'Forms the left cheek prominence and part of the lateral wall and floor of the orbit.',
   },
-  {
-    id: anatomyIds.rightZygomaticBone,
-    name: 'Right zygomatic bone',
-    system: 'Skeletal',
-    region: 'Cranium',
-    laterality: 'right',
-    externalIds: [{ system: 'FMA', identifier: 'FMA52892' }],
-    meshAssociations: [{
-      id: 'bodyparts3d:FJ3392',
-      source: 'BodyParts3D',
-      sourceMeshId: 'FJ3392',
-      format: 'obj',
-      url: '/assets/anatomy/bodyparts3d/FJ3392.obj',
-    }],
-    description: zygomaticDescription,
+  FMA52892: {
     location: 'Right lateral face, between the maxilla, temporal bone, sphenoid, and frontal bone.',
     function: 'Forms the right cheek prominence and part of the lateral wall and floor of the orbit.',
   },
-  {
-    id: anatomyIds.leftMaxilla,
-    name: 'Left maxilla',
-    system: 'Skeletal',
-    region: 'Cranium',
-    laterality: 'left',
-    externalIds: [{ system: 'FMA', identifier: 'FMA53650' }],
-    meshAssociations: [{
-      id: 'bodyparts3d:FJ3269',
-      source: 'BodyParts3D',
-      sourceMeshId: 'FJ3269',
-      format: 'obj',
-      url: '/assets/anatomy/bodyparts3d/FJ3269.obj',
-    }],
-    description: maxillaDescription,
+  FMA53650: {
     location: 'Left upper jaw, inferior to the orbit and lateral to the nasal opening.',
     function: 'Supports the left upper teeth and forms parts of the hard palate, orbit, and nasal cavity.',
   },
-  {
-    id: anatomyIds.rightMaxilla,
-    name: 'Right maxilla',
-    system: 'Skeletal',
-    region: 'Cranium',
-    laterality: 'right',
-    externalIds: [{ system: 'FMA', identifier: 'FMA53649' }],
-    meshAssociations: [{
-      id: 'bodyparts3d:FJ3375',
-      source: 'BodyParts3D',
-      sourceMeshId: 'FJ3375',
-      format: 'obj',
-      url: '/assets/anatomy/bodyparts3d/FJ3375.obj',
-    }],
-    description: maxillaDescription,
+  FMA53649: {
     location: 'Right upper jaw, inferior to the orbit and lateral to the nasal opening.',
     function: 'Supports the right upper teeth and forms parts of the hard palate, orbit, and nasal cavity.',
   },
-  {
-    id: anatomyIds.mandible,
-    name: 'Mandible',
-    system: 'Skeletal',
-    region: 'Cranium',
-    laterality: 'unpaired',
-    externalIds: [{ system: 'FMA', identifier: 'FMA52748' }],
-    meshAssociations: [{
-      id: 'bodyparts3d:FJ3289',
-      source: 'BodyParts3D',
-      sourceMeshId: 'FJ3289',
-      format: 'obj',
-      url: '/assets/anatomy/bodyparts3d/FJ3289.obj',
-    }],
-    description: 'The mandible is the mobile lower jaw and the only movable bone of the skull.',
+  FMA52748: {
     location: 'Inferior face, articulating with the temporal bones at the temporomandibular joints.',
     function: 'Supports the lower teeth and enables mastication and speech-related movements.',
   },
-]
+}
+
+const regionsByGroup: Readonly<Record<string, string>> = {
+  Skull: 'Skull',
+  'Vertebral column': 'Spine',
+  Thorax: 'Thorax',
+  Pelvis: 'Pelvis',
+  'Right upper limb': 'Upper limbs',
+  'Left upper limb': 'Upper limbs',
+  'Right lower limb': 'Lower limbs',
+  'Left lower limb': 'Lower limbs',
+}
+
+function getOwnedAnatomyId(source: SkeletonSourceStructure): AnatomyId {
+  const legacyId = legacyAnatomyIds[source.fma]
+  if (legacyId) return legacyId
+  const sourceIdentifier = source.fma.startsWith('FMA') ? source.fma.toLowerCase() : `bodyparts3d-${source.fma.toLowerCase()}`
+  return createAnatomyId(`anatomy:skeleton:${sourceIdentifier}`)
+}
+
+function getLaterality(source: SkeletonSourceStructure): Laterality {
+  const label = `${source.name} ${source.group}`.toLowerCase()
+  if (/\bleft\b/.test(label)) return 'left'
+  if (/\bright\b/.test(label)) return 'right'
+  return 'unpaired'
+}
+
+export const structures: readonly AnatomyStructure[] = (skeletonStructures as SkeletonSourceStructure[]).map((source) => {
+  const region = regionsByGroup[source.group]
+  if (!region) throw new Error(`Unknown BodyParts3D skeleton group "${source.group}" for "${source.id}".`)
+  const externalIdSystem = /^FMA\d+$/.test(source.fma) ? 'FMA' : 'BodyParts3D'
+  const legacy = legacyReference[source.fma]
+
+  return {
+    id: getOwnedAnatomyId(source),
+    name: source.name,
+    sourceName: source.sourceName,
+    system: 'Skeletal',
+    region,
+    subgroup: source.subgroup,
+    laterality: getLaterality(source),
+    externalIds: [{ system: externalIdSystem, identifier: source.fma }],
+    meshAssociations: [{
+      id: `bodyparts3d-3.0:${source.id}`,
+      source: 'BodyParts3D 3.0',
+      sourceMeshId: source.id,
+      format: 'glb',
+      url: '/assets/anatomy/bodyparts3d/skeleton-3.0/skeleton.glb',
+    }],
+    description: source.description,
+    sourceNote: source.note,
+    ...legacy,
+  }
+})
 
 export function createAnatomyCatalog(records: readonly AnatomyStructure[]): AnatomyCatalog {
   const structuresById = new Map<AnatomyId, AnatomyStructure>()

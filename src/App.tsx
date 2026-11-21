@@ -26,7 +26,7 @@ const nav: { name: Tab; icon: LucideIcon }[] = [
 ]
 
 const systems = ['All systems', ...new Set(structures.map(structure => structure.system))]
-const regions = ['All regions', ...new Set(structures.map(structure => structure.region))]
+const regions = ['All regions', 'Skull', 'Spine', 'Thorax', 'Pelvis', 'Upper limbs', 'Lower limbs']
 
 function matchesFilters(structure: typeof structures[number], system: string, region: string) {
   return (system === 'All systems' || structure.system === system)
@@ -60,11 +60,17 @@ export default function App() {
       structure.id,
       structure.system,
       structure.region,
+      structure.subgroup ?? '',
+      structure.sourceName ?? '',
       ...(structure.externalIds ?? []).map(identifier => identifier.identifier),
       ...structure.meshAssociations.map(association => association.sourceMeshId),
     ]
     return [structure.name, ...identifiers].some(value => value.toLowerCase().includes(normalizedSearch))
   })
+  const referenceGroups = regions.slice(1).map(group => ({
+    group,
+    structures: referenceStructures.filter(structure => structure.region === group),
+  })).filter(group => group.structures.length > 0)
   const visibleStructureIds = new Set(filteredStructures
     .filter(structure => isolationId ? structure.id === isolationId : !hiddenIds.has(structure.id))
     .map(structure => structure.id))
@@ -115,8 +121,8 @@ export default function App() {
       </nav>
       <div className="sidebar-note">
         <span className="sidebar-note-label">MODEL</span>
-        <strong>6 bones</strong>
-        <span>Skull subset</span>
+        <strong>{structures.length} structures</strong>
+        <span>Skeleton model</span>
       </div>
     </aside>
 
@@ -135,7 +141,7 @@ export default function App() {
             <h1>{tab === 'Explore' ? 'Explore anatomy' : tab}</h1>
             <p className="page-description">
               {tab === 'Explore'
-                ? 'Explore six selectable bones in a partial skull—not a complete skull or full human anatomy.'
+                ? `Explore ${structures.length} selectable structures across the skull, spine, thorax, pelvis, and limbs. This is a simplified adult-male reference model with documented omissions and combined meshes.`
                 : tab === 'Challenge'
                   ? 'Identification challenges are not available yet.'
                   : 'Progress tracking is not available yet.'}
@@ -206,7 +212,9 @@ export default function App() {
 
             {selected ? <>
               <div className="structure-tags">
-                <span>{selected.system}</span><span>{selected.region}</span><span>{selected.laterality}</span>
+                <span>{selected.system}</span><span>{selected.region}</span>
+                {selected.subgroup && <span>{selected.subgroup}</span>}
+                <span>{selected.laterality}</span>
               </div>
               <div className="panel-section structure-information">
                 <div className="panel-section-heading">Identifiers</div>
@@ -214,15 +222,25 @@ export default function App() {
                   {selected.externalIds?.map(identifier => <span key={`${identifier.system}:${identifier.identifier}`}>{identifier.system}: {identifier.identifier}<br/></span>)}
                   {selected.meshAssociations.map(association => <span key={association.id}>{association.source} mesh: {association.sourceMeshId}<br/></span>)}
                 </p>
-                <div className="panel-section-heading">Overview</div>
-                <p className="info-copy">{selected.description ?? 'No description available.'}</p>
-                <div className="panel-section-heading">Location</div>
-                <p className="info-copy">{selected.location ?? 'No location information available.'}</p>
-                <div className="panel-section-heading">Function</div>
-                <p className="info-copy">{selected.function ?? 'No function information available.'}</p>
+                {selected.description && <>
+                  <div className="panel-section-heading">Overview</div>
+                  <p className="info-copy">{selected.description}</p>
+                </>}
+                {selected.location && <>
+                  <div className="panel-section-heading">Location</div>
+                  <p className="info-copy">{selected.location}</p>
+                </>}
+                {selected.function && <>
+                  <div className="panel-section-heading">Function</div>
+                  <p className="info-copy">{selected.function}</p>
+                </>}
+                {selected.sourceNote && <>
+                  <div className="panel-section-heading">Model note</div>
+                  <p className="info-copy">{selected.sourceNote}</p>
+                </>}
               </div>
             </> : <div className="panel-section selection-prompt">
-              <p>Select a bone in the model or choose one from the structure index.</p>
+              <p>Select a skeletal structure in the model or choose one from the structure index.</p>
             </div>}
 
             <div className="panel-section structure-control-section">
@@ -276,7 +294,9 @@ export default function App() {
                 <span>Search anatomy</span>
                 <input aria-label="Search structures" autoFocus value={searchTerm} onChange={event => setSearchTerm(event.target.value)} placeholder="Name, ID, or mesh"/>
               </label>}
-              {referenceStructures.length > 0 ? referenceStructures.map(structure => {
+              {referenceStructures.length > 0 ? referenceGroups.map(({ group, structures: groupStructures }) => <div key={group} className="structure-index-group">
+                <div className="structure-index-group-heading">{group}<span>{groupStructures.length}</span></div>
+                {groupStructures.map(structure => {
                 const isolated = isolationId === structure.id
                 const hiddenByIsolation = isolationId !== null && !isolated
                 const hidden = hiddenIds.has(structure.id)
@@ -296,7 +316,8 @@ export default function App() {
                     {displayed ? <Eye size={17}/> : <EyeOff size={17}/>}
                   </button>
                 </div>
-              }) : <p className="filter-empty-message" role="status">{normalizedSearch ? 'No structures match your search.' : 'No structures match the selected filters.'}</p>}
+                })}
+              </div>) : <p className="filter-empty-message" role="status">{normalizedSearch ? 'No structures match your search.' : 'No structures match the selected filters.'}</p>}
             </div>
           </aside>}
         </div> : <section className="future-state" aria-labelledby="future-state-title">
@@ -305,7 +326,7 @@ export default function App() {
           <h2 id="future-state-title">{tab === 'Challenge' ? 'Challenge sessions are not available yet' : 'Progress tracking is not available yet'}</h2>
           <p>
             {tab === 'Challenge'
-              ? 'Timed rounds, answer validation, and scoring are not implemented. Explore the currently available skull structures in the meantime.'
+              ? 'Timed rounds, answer validation, and scoring are not implemented. Explore the currently available skeletal structures in the meantime.'
               : 'Your learning history will appear here after real challenge results can be recorded. No progress has been tracked.'}
           </p>
           <button className="primary-button" onClick={() => setTab('Explore')}>Explore anatomy<ChevronRight size={18}/></button>
@@ -321,9 +342,9 @@ export default function App() {
           <div><p className="panel-overline">Anatomy explorer</p><h2 id="help-title">Using the anatomy viewer</h2></div>
           <button className="panel-icon-button" aria-label="Close help" autoFocus onClick={() => setHelpOpen(false)}><X size={18}/></button>
         </div>
-        <p>Select a structure in the model or index to view its reference information. Search by name, anatomy ID, or source mesh ID.</p>
+        <p>Select a structure in the model or index to view its reference information. Search by name, anatomy ID, source identifier, or source mesh ID.</p>
         <p>Drag to orbit, scroll to zoom, and right-drag to pan. Selected structures can be hidden, isolated, or made transparent.</p>
-        <p>The current model contains six skull bones only. It is not a complete skull or full-body model.</p>
+        <p>The model contains {structures.length} selectable structures: bones, costal cartilages, and intervertebral discs. It omits the coccyx, teeth, and ear ossicles; some structures are combined meshes. See the bundled attribution for source and license details.</p>
         <button className="tool-button help-close-button" onClick={() => setHelpOpen(false)}>Close help</button>
       </section>
     </div>}

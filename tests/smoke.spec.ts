@@ -1,78 +1,85 @@
 import { expect, test } from '@playwright/test'
 
-const structures = [
-  { name: 'Frontal bone', anatomyId: 'anatomy:bone:frontal', fmaId: 'FMA52734', meshId: 'FJ3200', x: 0.5, y: 0.34 },
-  { name: 'Left zygomatic bone', anatomyId: 'anatomy:bone:zygomatic:left', fmaId: 'FMA52893', meshId: 'FJ3287', x: 0.58, y: 0.54 },
-  { name: 'Right zygomatic bone', anatomyId: 'anatomy:bone:zygomatic:right', fmaId: 'FMA52892', meshId: 'FJ3392', x: 0.42, y: 0.54 },
-  { name: 'Left maxilla', anatomyId: 'anatomy:bone:maxilla:left', fmaId: 'FMA53650', meshId: 'FJ3269', x: 0.55, y: 0.65 },
-  { name: 'Right maxilla', anatomyId: 'anatomy:bone:maxilla:right', fmaId: 'FMA53649', meshId: 'FJ3375', x: 0.45, y: 0.65 },
-  { name: 'Mandible', anatomyId: 'anatomy:bone:mandible', fmaId: 'FMA52748', meshId: 'FJ3289', x: 0.5, y: 0.8 },
+const representativeStructures = [
+  { name: 'Frontal bone', anatomyId: 'anatomy:bone:frontal', sourceId: 'frontal-bone', externalLabel: 'FMA: FMA52734' },
+  { name: 'Left zygomatic bone', anatomyId: 'anatomy:bone:zygomatic:left', sourceId: 'left-zygomatic-bone', externalLabel: 'FMA: FMA52893' },
+  { name: 'Sixth cervical vertebra (C6)', anatomyId: 'anatomy:skeleton:fma12524', sourceId: 'sixth-cervical-vertebra-c6', externalLabel: 'FMA: FMA12524' },
+  { name: 'Body of sternum', anatomyId: 'anatomy:skeleton:fma7487', sourceId: 'body-of-sternum', externalLabel: 'FMA: FMA7487' },
+  { name: 'Right hip bone', anatomyId: 'anatomy:skeleton:fma16586', sourceId: 'right-hip-bone', externalLabel: 'FMA: FMA16586' },
+  { name: 'Left humerus', anatomyId: 'anatomy:skeleton:fma23131', sourceId: 'left-humerus', externalLabel: 'FMA: FMA23131' },
+  { name: 'Left femur', anatomyId: 'anatomy:skeleton:fma24475', sourceId: 'left-femur', externalLabel: 'FMA: FMA24475' },
+  { name: 'Right lower costal cartilages', anatomyId: 'anatomy:skeleton:bodyparts3d-bp28', sourceId: 'right-lower-costal-cartilages', externalLabel: 'BodyParts3D: BP28' },
 ]
 
-test('loads and independently selects all six source bones', async ({ page }) => {
-  await page.addInitScript(`
-    const nativeFetch = window.fetch.bind(window)
-    window.fetch = async (input, init) => {
-      const url = typeof input === 'string' ? input : input instanceof Request ? input.url : input.href
-      if (url.endsWith('/FJ3200.obj')) await new Promise(resolve => setTimeout(resolve, 500))
-      return nativeFetch(input, init)
-    }
-  `)
+test('loads and selects source structures across the full skeleton', async ({ page }) => {
+  await page.route('**/skeleton.glb', async route => {
+    await new Promise(resolve => setTimeout(resolve, 400))
+    await route.continue()
+  })
   await page.goto('/')
   await expect(page).toHaveTitle('ANATOMY — Anatomy Explorer')
   await expect(page.getByRole('heading', { name: 'Explore anatomy' })).toBeVisible()
-  await expect(page.locator('.viewport-footer [role="status"]')).toContainText('Loading anatomical meshes')
+  await expect(page.locator('.viewport-footer [role="status"]')).toContainText('Loading the skeleton model')
 
-  const canvas = page.locator('.viewport canvas')
-  await expect(canvas).toBeVisible()
-  await expect(page.locator('.model-stage')).toHaveAttribute('data-model-ready', 'true')
-  const bounds = await canvas.boundingBox()
-  if (!bounds) {
-    throw new Error('The 3D canvas has no visible bounds')
-  }
+  const stage = page.locator('.model-stage')
+  await expect(stage).toHaveAttribute('data-structure-count', '242')
+  await expect(stage).toHaveAttribute('data-model-ready', 'true')
+  await expect(stage).toHaveAttribute('data-ready-count', '242')
 
-  for (const structure of structures) {
-    await canvas.click({
-      position: { x: bounds.width * structure.x, y: bounds.height * structure.y },
-    })
-    const panel = page.locator('.right-panel')
+  const panel = page.locator('.right-panel')
+  for (const structure of representativeStructures) {
+    await page.getByRole('button', { name: `Select ${structure.name}` }).click()
     await expect(panel.locator('h2')).toHaveText(structure.name)
     await expect(panel).toContainText(`Anatomy ID: ${structure.anatomyId}`)
-    await expect(panel).toContainText(`FMA: ${structure.fmaId}`)
-    await expect(panel).toContainText(`BodyParts3D mesh: ${structure.meshId}`)
+    await expect(panel).toContainText(structure.externalLabel)
+    await expect(panel).toContainText(`BodyParts3D 3.0 mesh: ${structure.sourceId}`)
   }
 
-  const last = structures[structures.length - 1]
-  await canvas.click({ position: { x: bounds.width * last.x, y: bounds.height * last.y } })
-  await expect(page.locator('.right-panel h2')).toHaveText('Select a structure')
-  await expect(page.locator('.right-panel')).toContainText('Select a bone in the model or choose one from the structure index.')
+  const canvas = page.locator('.viewport canvas')
+  const bounds = await canvas.boundingBox()
+  if (!bounds) throw new Error('The 3D canvas has no visible bounds')
+  await canvas.click({ position: { x: bounds.width * 0.5, y: bounds.height * 0.26 } })
+  await expect(panel.locator('h2')).toHaveText('Seventh cervical vertebra (C7)')
+  await expect(stage).toHaveAttribute('data-selected-id', 'anatomy:skeleton:fma12525')
+  await expect(panel).toContainText('FMA: FMA12525')
+
+  await canvas.click({ position: { x: bounds.width * 0.5, y: bounds.height * 0.3 } })
+  await expect(panel.locator('h2')).toHaveText('Body of sternum')
+  await expect(stage).toHaveAttribute('data-selected-id', 'anatomy:skeleton:fma7487')
 })
 
-test('selection, camera controls, and viewport toggles respond to input', async ({ page }) => {
+test('selection, highlighting, camera controls, and viewport toggles respond to input', async ({ page }) => {
+  test.setTimeout(90000)
   await page.goto('/')
 
   const canvas = page.locator('.viewport canvas')
-  await expect(page.locator('.model-stage')).toHaveAttribute('data-model-ready', 'true')
+  const stage = page.locator('.model-stage')
+  await expect(stage).toHaveAttribute('data-model-ready', 'true')
   await canvas.scrollIntoViewIfNeeded()
-  const canvasBounds = await canvas.boundingBox()
-  if (!canvasBounds) {
-    throw new Error('The 3D canvas has no visible bounds')
-  }
-  await page.mouse.move(canvasBounds.x + canvasBounds.width / 2, canvasBounds.y + canvasBounds.height * 0.8)
+  const bounds = await canvas.boundingBox()
+  if (!bounds) throw new Error('The 3D canvas has no visible bounds')
+  await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height * 0.26)
   await expect.poll(() => page.evaluate(() => document.body.style.cursor)).toBe('pointer')
-  await canvas.click({ position: { x: canvasBounds.width / 2, y: canvasBounds.height * 0.8 } })
-  await expect(page.locator('.model-stage')).toHaveAttribute('data-selected-id', 'anatomy:bone:mandible')
-  await expect(page.locator('.right-panel h2')).toHaveText('Mandible')
-  await canvas.click({ position: { x: canvasBounds.width / 2, y: canvasBounds.height * 0.8 } })
-  await expect(page.locator('.model-stage')).toHaveAttribute('data-selected-id', '')
-  await expect(page.locator('.right-panel h2')).toHaveText('Select a structure')
+  await canvas.click({ position: { x: bounds.width / 2, y: bounds.height * 0.26 } })
+  await expect(stage).toHaveAttribute('data-selected-id', 'anatomy:skeleton:fma12525')
+  await expect(page.locator('.right-panel h2')).toHaveText('Seventh cervical vertebra (C7)')
 
   const beforeOrbit = await canvas.screenshot()
-  await page.mouse.move(canvasBounds.x + canvasBounds.width / 2, canvasBounds.y + canvasBounds.height / 2)
+  await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2)
   await page.mouse.down()
-  await page.mouse.move(canvasBounds.x + canvasBounds.width * 0.65, canvasBounds.y + canvasBounds.height * 0.46, { steps: 8 })
+  await page.mouse.move(bounds.x + bounds.width * 0.65, bounds.y + bounds.height * 0.46, { steps: 8 })
   await page.mouse.up()
-  await expect.poll(async () => (await canvas.screenshot()).equals(beforeOrbit)).toBe(false)
+  await page.waitForTimeout(300)
+  const afterOrbit = await canvas.screenshot()
+  expect(afterOrbit.equals(beforeOrbit)).toBe(false)
+
+  await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height * 0.48)
+  await page.mouse.down({ button: 'right' })
+  await page.mouse.move(bounds.x + bounds.width * 0.58, bounds.y + bounds.height * 0.42, { steps: 8 })
+  await page.mouse.up({ button: 'right' })
+  await page.waitForTimeout(300)
+  const afterPan = await canvas.screenshot()
+  expect(afterPan.equals(afterOrbit)).toBe(false)
 
   const wireframe = page.getByRole('button', { name: 'Toggle wireframe' })
   await wireframe.click()
@@ -82,17 +89,14 @@ test('selection, camera controls, and viewport toggles respond to input', async 
   await labels.click()
   await expect(labels).not.toHaveClass(/active/)
 
-  await page.locator('.view-controls button[title="Zoom in"]').click()
-  await expect(page.locator('.model-stage')).toHaveAttribute('data-camera-distance', '4.35')
-  await page.locator('.view-controls button[title="Zoom out"]').click()
-  await expect(page.locator('.model-stage')).toHaveAttribute('data-camera-distance', '4.7')
-  await page.locator('.view-controls button[title="Zoom in"]').click()
-  await page.locator('.view-controls button[title="Reset camera"]').click()
-  await expect(page.locator('.model-stage')).toHaveAttribute('data-camera-distance', '4.7')
-  await page.locator('.view-controls button[title="Zoom in"]').click()
-  await expect(page.locator('.model-stage')).toHaveAttribute('data-camera-distance', '4.35')
+  await page.getByRole('button', { name: 'Zoom in' }).click()
+  await expect(stage).toHaveAttribute('data-camera-zoom', '0.92')
+  await page.getByRole('button', { name: 'Zoom out' }).focus()
+  await page.keyboard.press('Enter')
+  await expect(stage).toHaveAttribute('data-camera-zoom', '1')
+  await page.getByRole('button', { name: 'Zoom in' }).click()
   await page.getByRole('button', { name: 'Reset camera' }).click()
-  await expect(page.locator('.model-stage')).toHaveAttribute('data-camera-distance', '4.7')
+  await expect(stage).toHaveAttribute('data-camera-zoom', '1')
 })
 
 test('releases the viewport on navigation and reloads selectable anatomy on return', async ({ page }) => {
@@ -103,14 +107,15 @@ test('releases the viewport on navigation and reloads selectable anatomy on retu
   page.on('pageerror', error => browserErrors.push(error.message))
 
   await page.goto('/')
-  await expect(page.locator('.model-stage')).toHaveAttribute('data-model-ready', 'true')
+  const stage = page.locator('.model-stage')
+  await expect(stage).toHaveAttribute('data-model-ready', 'true')
   await page.getByRole('button', { name: 'Progress', exact: true }).click()
   await expect(page.locator('.model-stage')).toHaveCount(0)
   await page.getByRole('button', { name: 'Explore', exact: true }).click()
-  await expect(page.locator('.model-stage')).toHaveAttribute('data-model-ready', 'true')
+  await expect(stage).toHaveAttribute('data-model-ready', 'true')
 
-  await page.getByRole('button', { name: 'Select Mandible' }).click()
-  await expect(page.locator('.model-stage')).toHaveAttribute('data-selected-id', 'anatomy:bone:mandible')
+  await page.getByRole('button', { name: 'Select Sixth cervical vertebra (C6)' }).click()
+  await expect(stage).toHaveAttribute('data-selected-id', 'anatomy:skeleton:fma12524')
   expect(browserErrors).toEqual([])
 })
 
@@ -121,30 +126,26 @@ test('navigation adapts between desktop and mobile layouts', async ({ page }) =>
   await expect(page.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible()
   const desktopCenter = await page.locator('.center-column').boundingBox()
   const desktopPanel = await page.locator('.right-panel').boundingBox()
-  if (!desktopCenter || !desktopPanel) {
-    throw new Error('Desktop workspace columns have no visible bounds')
-  }
+  if (!desktopCenter || !desktopPanel) throw new Error('Desktop workspace columns have no visible bounds')
   expect(desktopPanel.x).toBeGreaterThan(desktopCenter.x)
 
   await page.setViewportSize({ width: 390, height: 844 })
   await expect(page.locator('.sidebar')).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button')).toHaveCount(3)
-  await page.getByRole('button', { name: 'Explore', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Explore anatomy' })).toBeVisible()
   const mobileCenter = await page.locator('.center-column').boundingBox()
   const mobilePanel = await page.locator('.right-panel').boundingBox()
-  if (!mobileCenter || !mobilePanel) {
-    throw new Error('Mobile workspace sections have no visible bounds')
-  }
+  if (!mobileCenter || !mobilePanel) throw new Error('Mobile workspace sections have no visible bounds')
   expect(mobilePanel.y).toBeGreaterThan(mobileCenter.y)
   await expect(page.locator('.viewport canvas')).toBeVisible()
+  await expect(page.locator('.model-stage')).toHaveAttribute('data-model-ready', 'true')
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
 })
 
-test('reports a missing OBJ, keeps other bones interactive, and retries the failed mesh', async ({ page }) => {
+test('reports a missing GLB and retries the complete model load', async ({ page }) => {
   let shouldFail = true
   let retryRequests = 0
-  await page.route('**/FJ3287.obj', async route => {
+  await page.route('**/skeleton.glb', async route => {
     if (shouldFail) {
       await route.fulfill({ status: 404, contentType: 'text/plain', body: 'Not found' })
       return
@@ -155,58 +156,43 @@ test('reports a missing OBJ, keeps other bones interactive, and retries the fail
 
   await page.goto('/')
   const stage = page.locator('.model-stage')
-  await expect(stage).toHaveAttribute('data-ready-count', '5')
+  await expect(stage).toHaveAttribute('data-ready-count', '0')
   const alert = page.getByRole('alert')
-  await expect(alert).toContainText('Left zygomatic bone')
-  await expect(alert).toContainText('Missing asset')
-  await expect(alert).toContainText('Loaded bones remain interactive')
-
-  const canvas = page.locator('.viewport canvas')
-  const bounds = await canvas.boundingBox()
-  if (!bounds) throw new Error('The 3D canvas has no visible bounds')
-  await canvas.click({ position: { x: bounds.width / 2, y: bounds.height * 0.8 } })
-  await expect(page.locator('.model-stage')).toHaveAttribute('data-selected-id', 'anatomy:bone:mandible')
+  await expect(alert).toContainText('Missing model asset')
+  await expect(alert).toContainText('HTTP 404')
 
   shouldFail = false
-  await page.getByRole('button', { name: 'Retry failed meshes' }).click()
-  await expect(stage).toHaveAttribute('data-ready-count', '6')
-  await expect(page.getByRole('alert')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Retry loading model' }).click()
+  await expect(stage).toHaveAttribute('data-model-ready', 'true')
+  await expect(stage).toHaveAttribute('data-ready-count', '242')
   expect(retryRequests).toBeGreaterThan(0)
 })
 
-test('reports invalid OBJ data without losing the remaining bones', async ({ page }) => {
-  await page.route('**/FJ3392.obj', route => route.fulfill({
+test('reports invalid GLB data without treating it as a valid empty model', async ({ page }) => {
+  await page.route('**/skeleton.glb', route => route.fulfill({
     status: 200,
-    contentType: 'text/plain',
-    body: 'this is not valid OBJ data',
+    contentType: 'application/octet-stream',
+    body: 'this is not valid GLB data',
   }))
 
   await page.goto('/')
   const stage = page.locator('.model-stage')
-  await expect(stage).toHaveAttribute('data-ready-count', '5')
+  await expect(stage).toHaveAttribute('data-ready-count', '0')
   const alert = page.getByRole('alert')
-  await expect(alert).toContainText('Right zygomatic bone')
   await expect(alert).toContainText('Invalid model data')
-  await expect(alert).toContainText('No triangle meshes were found')
-
-  const canvas = page.locator('.viewport canvas')
-  const bounds = await canvas.boundingBox()
-  if (!bounds) throw new Error('The 3D canvas has no visible bounds')
-  await canvas.click({ position: { x: bounds.width / 2, y: bounds.height * 0.8 } })
-  await expect(page.locator('.model-stage')).toHaveAttribute('data-selected-id', 'anatomy:bone:mandible')
+  await expect(alert).toContainText('not a valid binary glTF')
+  await expect(stage).toHaveAttribute('data-model-ready', 'false')
 })
 
-test('reports an OBJ server failure distinctly from missing or invalid data', async ({ page }) => {
-  await page.route('**/FJ3375.obj', route => route.fulfill({
+test('reports a GLB server failure distinctly from missing or invalid data', async ({ page }) => {
+  await page.route('**/skeleton.glb', route => route.fulfill({
     status: 503,
     contentType: 'text/plain',
     body: 'Temporarily unavailable',
   }))
 
   await page.goto('/')
-  await expect(page.locator('.model-stage')).toHaveAttribute('data-ready-count', '5')
   const alert = page.getByRole('alert')
-  await expect(alert).toContainText('Right maxilla')
   await expect(alert).toContainText('Network error')
   await expect(alert).toContainText('HTTP 503')
 })

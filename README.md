@@ -1,71 +1,50 @@
-# ANATOMY — Interactive Skull Explorer
+# ANATOMY — Interactive Skeleton Explorer
 
-A React + TypeScript anatomy exploration prototype with a live WebGL viewport using six independently selectable BodyParts3D skull meshes.
+ANATOMY is a React + TypeScript anatomy exploration prototype with a live WebGL viewport and an individually selectable 242-structure human skeleton.
 
-## Requirements
+## Requirements and local development
+
 - Node.js 20.19+ (or a current LTS release)
 - npm
 
-## Run locally
-Open a terminal in this folder and run:
 ```bash
 npm install
 npm run dev
 ```
+
 Open the local URL printed by Vite (normally http://localhost:5173).
 
 ## Checks
-Run the TypeScript check and production build with:
+
 ```bash
 npm run typecheck
 npm run build
-```
-
-The browser smoke tests use Playwright and Chromium. Install the browser once with
-`npx playwright install chromium`, then run:
-```bash
 npm run test:e2e
 ```
 
+The browser tests use Playwright and Chromium. Install Chromium once with `npx playwright install chromium` if it is not already available.
+
 ## Explore
-- Explore is the default screen and centers the interactive 3D viewport with a synchronized structure reference and index.
-- The current model contains only the frontal bone, left and right zygomatic bones, left and right maxillae, and mandible. It is not a complete skull or a full-body anatomy model.
-- Structures can be selected in the model or index, searched by name or
-  identifier, hidden/restored, isolated, and adjusted by opacity.
-- System and region filters are derived from the anatomy records currently available.
-- Orbit the model by dragging, zoom with the mouse wheel, and pan with right-drag. Accessible camera reset, zoom, wireframe, and label controls are in the viewport.
-- Loading progress, individual asset failures, retry, and WebGL recovery guidance are supported.
-- Challenge and Progress are future destinations. Challenge gameplay and result tracking are not implemented; no performance statistics are displayed.
-- Anatomy records use stable application-owned IDs and explicit mesh associations. FMA identifiers remain external references.
+
+- The model has 242 selectable structures: bones, costal cartilages, and intervertebral discs. This is not a count of 242 bones.
+- Structures are organized into skull, spine, thorax, pelvis, upper-limb, and lower-limb regions, with separate left and right records where the source provides them.
+- Select structures in 3D or in the searchable index. Hide/show, isolation, opacity, region filtering, camera orbit, zoom, and pan are available.
+- The application preserves the six original facial-structure ANATOMY IDs and assigns application-owned stable IDs to the remaining source structures.
+- Challenge and Progress are unavailable destinations. Challenge gameplay and result tracking are not implemented; no performance statistics are displayed.
+
+## Model provenance and scope
+
+The bundled GLB is the pinned OrganUI Skeleton adaptation of BodyParts3D 3.0. It is 5,221,116 bytes and contains 242 manifest-matched mesh nodes. The source subset is simplified to 277,228 triangles and is an adult-male reference model, not patient-specific or expert-reviewed.
+
+The model omits the coccyx, teeth, and ear ossicles; hip bones are combined meshes, foot sesamoids are combined per foot, and the source describes its lower costal-cartilage interpretation as inferred. See [the asset documentation](./public/assets/anatomy/bodyparts3d/skeleton-3.0/README.md), [upstream attribution and modifications](./public/assets/anatomy/bodyparts3d/skeleton-3.0/UPSTREAM-ATTRIBUTION.md), and the [pinned manifest](./public/assets/anatomy/bodyparts3d/skeleton-3.0/manifest.json).
+
+The model is licensed under [CC BY-SA 2.1 Japan](https://creativecommons.org/licenses/by-sa/2.1/jp/deed.en). Required credit: “BodyParts3D, © The Database Center for Life Science licensed under CC Attribution-Share Alike 2.1 Japan.” The catalog descriptions and names are derived from OrganUI metadata under its MIT license, provided separately at [ORGANUI-LICENSE.txt](./public/assets/anatomy/bodyparts3d/skeleton-3.0/ORGANUI-LICENSE.txt). These licenses are distinct; the MIT license does not relicense the model.
+
+The source metadata is retained in [skeleton-structures.json](./src/data/skeleton-structures.json). No anatomy or relationships are inferred for missing source records. Educational exploration only; not for clinical use.
 
 ## Data and rendering foundations
-- Anatomy IDs use the application-owned `anatomy:` namespace and are branded
-  separately from external identifiers. Catalog construction checks required
-  identity fields, duplicate anatomy IDs, external identifiers and mesh
-  associations, supported formats, and relationship targets.
-- A structure can reference multiple mesh associations. Descriptions,
-  locations, and functions are optional; missing reference text is presented
-  as unavailable rather than invented.
-- The 3D viewport is loaded as a separate JavaScript module. Parsed model
-  geometries, materials, and textures are disposed when the viewport is
-  removed.
-- The current runtime still fetches individual OBJ files and parses them on the
-  main thread. The six-mesh prototype has not been benchmarked for large
-  catalogs; worker-based parsing, progressive asset loading, and accelerated
-  picking require measurement before expansion.
 
-## Asset provenance and scope
-The six unmodified OBJ source meshes are from BodyParts3D release 4.0. They are centered, rotated, and scaled at render time only; the source geometry is not destructively modified.
-
-| Structure | FMA identifier | BodyParts3D mesh |
-| --- | --- | --- |
-| Frontal bone | FMA52734 | FJ3200 |
-| Left zygomatic bone | FMA52893 | FJ3287 |
-| Right zygomatic bone | FMA52892 | FJ3392 |
-| Left maxilla | FMA53650 | FJ3269 |
-| Right maxilla | FMA53649 | FJ3375 |
-| Mandible | FMA52748 | FJ3289 |
-
-BodyParts3D, © The Database Center for Life Science licensed under CC Attribution 4.0 International. See [the bundled attribution file](./public/assets/anatomy/bodyparts3d/ATTRIBUTION.txt) and [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
-
-This is a partial skull subset from a 2013 dataset release. It supports broad educational identification of these six bones only; it is not a complete skull, does not guarantee fine anatomical landmarks, and must not be used for clinical, diagnostic, or assessment purposes.
+- Catalog identity uses the application-owned `anatomy:` namespace, separate from FMA and BodyParts3D identifiers. Catalog validation checks identity fields, duplicate external identifiers, mesh associations, supported formats, and relationship targets.
+- The GLB is requested and parsed once. Its structure IDs and external identifiers are checked against the catalog before the 242 meshes become interactive.
+- Parsed model geometries, materials, and textures are disposed when the viewport is removed. The viewport is a lazy JavaScript module.
+- Challenge gameplay, learning progress, and additional anatomical systems remain future work.
