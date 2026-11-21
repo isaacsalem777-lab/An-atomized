@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Activity, Atom, BookOpen, ChartNoAxesColumnIncreasing, ChevronDown, ChevronRight, CircleHelp, Clock3, Command, Compass, Crosshair, Gauge, Layers, Menu, Search, Settings2, ShieldCheck, Sparkles, Target, Trophy, X } from 'lucide-react'
 import Viewport from './components/Viewport'
-import { regions, structures, systems } from './data/anatomy'
+import { anatomyCatalog, regions, structures, systems, type AnatomyId } from './data/anatomy'
 
 type Tab = 'Dashboard' | 'Explore' | 'Challenge' | 'Progress'
 const nav: { name: Tab; icon: typeof Activity }[] = [
@@ -13,9 +13,9 @@ export default function App() {
   const [system, setSystem] = useState('Skeletal')
   const [region, setRegion] = useState('Cranium')
   const [difficulty, setDifficulty] = useState('Intermediate')
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const selected = structures.find(structure => structure.id === selectedId)
-  const selectStructure = (id: string | null) => setSelectedId(current => current === id ? null : id)
+  const [selectedId, setSelectedId] = useState<AnatomyId | null>(null)
+  const selected = selectedId ? anatomyCatalog.structuresById.get(selectedId) : undefined
+  const selectStructure = (id: AnatomyId | null) => setSelectedId(current => current === id ? null : id)
   const [showInfo, setShowInfo] = useState(true)
   const [mobileNav, setMobileNav] = useState(false)
   const [answered, setAnswered] = useState(false)
@@ -56,8 +56,8 @@ export default function App() {
               <div className="panel-header"><div><div className="panel-overline">STRUCTURE REFERENCE</div><h2>{selected?.name ?? 'Select a bone'}</h2></div><button className="panel-more"><Search size={16}/></button></div>
               {selected ? <>
                 <div className="structure-tags"><span>{selected.system}</span><span>{selected.region}</span></div>
-                <div className="panel-section"><div className="field-label">ANATOMY IDENTIFIERS</div><p className="info-copy">FMA: {selected.fmaId}<br/>BodyParts3D mesh: {selected.meshId}</p></div>
-                <div className="panel-section"><div className="field-label">OVERVIEW</div><p className="info-copy">{selected.detail}</p></div>
+                <div className="panel-section"><div className="field-label">ANATOMY IDENTIFIERS</div><p className="info-copy">Anatomy ID: {selected.id}<br/>{selected.externalIds?.map(identifier => <span key={`${identifier.system}:${identifier.identifier}`}>{identifier.system}: {identifier.identifier}<br/></span>)}{selected.meshAssociations.map(association => <span key={association.id}>{association.source} mesh: {association.sourceMeshId}<br/></span>)}</p></div>
+                <div className="panel-section"><div className="field-label">OVERVIEW</div><p className="info-copy">{selected.description}</p></div>
                 <div className="panel-section"><div className="field-label">LOCATION</div><p className="info-copy">{selected.location}</p></div>
                 <div className="panel-section"><div className="field-label">FUNCTION</div><p className="info-copy">{selected.function}</p></div>
               </> : <div className="panel-section"><div className="field-label">NO STRUCTURE SELECTED</div><p className="info-copy">Select a bone in the 3D model or choose one from the index below.</p></div>}

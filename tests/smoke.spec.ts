@@ -1,12 +1,12 @@
 import { expect, test } from '@playwright/test'
 
 const structures = [
-  { name: 'Frontal bone', fmaId: 'FMA52734', meshId: 'FJ3200', x: 0.5, y: 0.34 },
-  { name: 'Left zygomatic bone', fmaId: 'FMA52893', meshId: 'FJ3287', x: 0.64, y: 0.53 },
-  { name: 'Right zygomatic bone', fmaId: 'FMA52892', meshId: 'FJ3392', x: 0.36, y: 0.53 },
-  { name: 'Left maxilla', fmaId: 'FMA53650', meshId: 'FJ3269', x: 0.55, y: 0.65 },
-  { name: 'Right maxilla', fmaId: 'FMA53649', meshId: 'FJ3375', x: 0.45, y: 0.65 },
-  { name: 'Mandible', fmaId: 'FMA52748', meshId: 'FJ3289', x: 0.5, y: 0.8 },
+  { name: 'Frontal bone', anatomyId: 'anatomy:bone:frontal', fmaId: 'FMA52734', meshId: 'FJ3200', x: 0.5, y: 0.34 },
+  { name: 'Left zygomatic bone', anatomyId: 'anatomy:bone:zygomatic:left', fmaId: 'FMA52893', meshId: 'FJ3287', x: 0.64, y: 0.53 },
+  { name: 'Right zygomatic bone', anatomyId: 'anatomy:bone:zygomatic:right', fmaId: 'FMA52892', meshId: 'FJ3392', x: 0.36, y: 0.53 },
+  { name: 'Left maxilla', anatomyId: 'anatomy:bone:maxilla:left', fmaId: 'FMA53650', meshId: 'FJ3269', x: 0.55, y: 0.65 },
+  { name: 'Right maxilla', anatomyId: 'anatomy:bone:maxilla:right', fmaId: 'FMA53649', meshId: 'FJ3375', x: 0.45, y: 0.65 },
+  { name: 'Mandible', anatomyId: 'anatomy:bone:mandible', fmaId: 'FMA52748', meshId: 'FJ3289', x: 0.5, y: 0.8 },
 ]
 
 test('loads and independently selects all six source bones', async ({ page }) => {
@@ -39,6 +39,7 @@ test('loads and independently selects all six source bones', async ({ page }) =>
     })
     const panel = page.locator('.right-panel')
     await expect(panel.locator('h2')).toHaveText(structure.name)
+    await expect(panel).toContainText(`Anatomy ID: ${structure.anatomyId}`)
     await expect(panel).toContainText(`FMA: ${structure.fmaId}`)
     await expect(panel).toContainText(`BodyParts3D mesh: ${structure.meshId}`)
   }

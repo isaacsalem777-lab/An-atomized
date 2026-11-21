@@ -4,20 +4,20 @@ import { OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js'
 import { Eye, EyeOff, Layers3, Maximize2, Rotate3D, RotateCcw } from 'lucide-react'
-import { structures, type AnatomyStructure } from '../data/anatomy'
+import { anatomyCatalog, type AnatomyId, type AnatomyStructure, type MeshAssociation } from '../data/anatomy'
 
 type Props = {
   system: string
   region: string
   challenge: boolean
-  selectedId: string | null
-  onSelect: (id: string | null) => void
+  selectedId: AnatomyId | null
+  onSelect: (id: AnatomyId | null) => void
 }
 
-type ObjAssetState =
+type MeshAssetState =
   | { status: 'idle' | 'loading' }
   | { status: 'ready'; model: THREE.Group }
-  | { status: 'missing' | 'invalid' | 'network-error'; message: string }
+  | { status: 'missing' | 'invalid' | 'network-error' | 'unsupported'; message: string }
 
 type WebGLState =
   | { status: 'checking' }
@@ -26,24 +26,25 @@ type WebGLState =
 
 type BoneProps = {
   structure: AnatomyStructure
+  association: MeshAssociation
   source: THREE.Group
-  selectedId: string | null
-  onSelect: (id: string) => void
+  selectedId: AnatomyId | null
+  onSelect: (id: AnatomyId) => void
   wire: boolean
 }
 
 type AssetLoaderProps = {
-  structure: AnatomyStructure
+  association: MeshAssociation
   retryVersion: number
-  onStateChange: (id: string, state: ObjAssetState) => void
+  onStateChange: (id: string, state: MeshAssetState) => void
 }
 
 const sourceOffset: [number, number, number] = [0.66675, 136.94135, -1525.785]
 const attribution = 'BodyParts3D, © The Database Center for Life Science licensed under CC Attribution 4.0 International.'
 
-function createInitialAssetStates(): Record<string, ObjAssetState> {
-  const states: Record<string, ObjAssetState> = {}
-  structures.forEach(({ id }) => { states[id] = { status: 'idle' } })
+function createInitialAssetStates(): Record<string, MeshAssetState> {
+  const states: Record<string, MeshAssetState> = {}
+  anatomyCatalog.meshAssociationsById.forEach((_record, id) => { states[id] = { status: 'idle' } })
   return states
 }
 
@@ -95,10 +96,14 @@ function validateObjModel(model: THREE.Group): string | null {
   return null
 }
 
-async function loadObjAsset(url: string, signal: AbortSignal): Promise<ObjAssetState> {
+async function loadMeshAsset(association: MeshAssociation, signal: AbortSignal): Promise<MeshAssetState> {
+  if (association.format !== 'obj') {
+    return { status: 'unsupported', message: `The ${association.format.toUpperCase()} loader is not available yet.` }
+  }
+
   let response: Response
   try {
-    response = await fetch(url, { signal, cache: 'no-store' })
+    response = await fetch(association.url, { signal, cache: 'no-store' })
   } catch (error) {
     if (signal.aborted) throw error
     const detail = error instanceof Error ? error.message : 'The network request failed.'
@@ -141,22 +146,21 @@ async function loadObjAsset(url: string, signal: AbortSignal): Promise<ObjAssetS
   }
 }
 
-function AssetLoader({ structure, retryVersion, onStateChange }: AssetLoaderProps) {
+function AssetLoader({ association, retryVersion, onStateChange }: AssetLoaderProps) {
   useEffect(() => {
     const controller = new AbortController()
-    const url = `/assets/anatomy/bodyparts3d/${structure.meshId}.obj`
-    onStateChange(structure.id, { status: 'loading' })
+    onStateChange(association.id, { status: 'loading' })
 
-    void loadObjAsset(url, controller.signal).then((state) => {
-      if (!controller.signal.aborted) onStateChange(structure.id, state)
+    void loadMeshAsset(association, controller.signal).then((state) => {
+      if (!controller.signal.aborted) onStateChange(association.id, state)
     }).catch((error: unknown) => {
       if (controller.signal.aborted) return
       const detail = error instanceof Error ? error.message : 'The asset could not be loaded.'
-      onStateChange(structure.id, { status: 'network-error', message: detail })
+      onStateChange(association.id, { status: 'network-error', message: detail })
     })
 
     return () => controller.abort()
-  }, [onStateChange, retryVersion, structure])
+  }, [association, onStateChange, retryVersion])
   return null
 }
 
@@ -192,15 +196,26 @@ function CameraDistance({ distance }: { distance: number }) {
   return null
 }
 
-function Bone({ structure, source, selectedId, onSelect, wire }: BoneProps) {
+function Bone({ structure, association, source, selectedId, onSelect, wire }: BoneProps) {
   const [hovered, setHovered] = useState(false)
   const active = selectedId === structure.id
   const { object, materials } = useMemo(() => {
     const object = source.clone(true)
     const materials: THREE.MeshStandardMaterial[] = []
+    const externalIds = structure.externalIds ?? []
+    const fmaId = externalIds.find(({ system }) => system === 'FMA')?.identifier
+    const anatomyUserData = {
+      anatomyId: structure.id,
+      meshAssociationId: association.id,
+      assetSource: association.source,
+      sourceMeshId: association.sourceMeshId,
+      meshId: association.sourceMeshId,
+      externalIds,
+      ...(fmaId ? { fmaId } : {}),
+    }
 
-    object.name = structure.meshId
-    object.userData = { fmaId: structure.fmaId, meshId: structure.meshId }
+    object.name = association.id
+    object.userData = { ...object.userData, ...anatomyUserData }
     object.traverse((child) => {
       if (!(child instanceof THREE.Mesh)) return
 
@@ -209,8 +224,8 @@ function Bone({ structure, source, selectedId, onSelect, wire }: BoneProps) {
         roughness: 0.82,
         side: THREE.DoubleSide,
       })
-      child.name = structure.meshId
-      child.userData = { ...child.userData, fmaId: structure.fmaId, meshId: structure.meshId }
+      child.name = association.id
+      child.userData = { ...child.userData, ...anatomyUserData }
       child.material = material
       child.castShadow = false
       child.receiveShadow = false
@@ -218,7 +233,7 @@ function Bone({ structure, source, selectedId, onSelect, wire }: BoneProps) {
     })
 
     return { object, materials }
-  }, [source, structure])
+  }, [association, source, structure])
 
   useEffect(() => () => materials.forEach((material) => material.dispose()), [materials])
   useEffect(() => {
@@ -234,7 +249,7 @@ function Bone({ structure, source, selectedId, onSelect, wire }: BoneProps) {
   }, [active, hovered, materials, wire])
 
   return <group
-    name={structure.meshId}
+    name={association.id}
     onClick={(event) => {
       event.stopPropagation()
       onSelect(structure.id)
@@ -254,17 +269,18 @@ function Bone({ structure, source, selectedId, onSelect, wire }: BoneProps) {
 }
 
 function SkullModel({ models, selectedId, onSelect, wire }: {
-  models: { structure: AnatomyStructure; model: THREE.Group }[]
-  selectedId: string | null
-  onSelect: (id: string) => void
+  models: { structure: AnatomyStructure; association: MeshAssociation; model: THREE.Group }[]
+  selectedId: AnatomyId | null
+  onSelect: (id: AnatomyId) => void
   wire: boolean
 }) {
   // Convert the source's Z-up millimeter coordinates to the scene's Y-up centimeter scale.
   return <group scale={0.01} rotation={[-Math.PI / 2, 0, 0]}>
     <group position={sourceOffset}>
-      {models.map(({ structure, model }) => <Bone
-        key={structure.id}
+      {models.map(({ structure, association, model }) => <Bone
+        key={association.id}
         structure={structure}
+        association={association}
         source={model}
         selectedId={selectedId}
         onSelect={onSelect}
@@ -274,13 +290,14 @@ function SkullModel({ models, selectedId, onSelect, wire }: {
   </group>
 }
 
-function isFailure(state: ObjAssetState) {
-  return state.status === 'missing' || state.status === 'invalid' || state.status === 'network-error'
+function isFailure(state: MeshAssetState) {
+  return state.status === 'missing' || state.status === 'invalid' || state.status === 'network-error' || state.status === 'unsupported'
 }
 
-function failureLabel(state: ObjAssetState) {
+function failureLabel(state: MeshAssetState) {
   if (state.status === 'missing') return 'Missing asset'
   if (state.status === 'invalid') return 'Invalid model data'
+  if (state.status === 'unsupported') return 'Unsupported asset format'
   return 'Network error'
 }
 
@@ -292,8 +309,8 @@ export default function Viewport({ system, region, challenge, selectedId, onSele
   const [webgl, setWebgl] = useState<WebGLState>({ status: 'checking' })
   const [assetStates, setAssetStates] = useState(createInitialAssetStates)
   const [retryVersions, setRetryVersions] = useState<Record<string, number>>({})
-  const selected = structures.find((structure) => structure.id === selectedId)
-  const updateAssetState = useCallback((id: string, state: ObjAssetState) => {
+  const selected = selectedId ? anatomyCatalog.structuresById.get(selectedId) : undefined
+  const updateAssetState = useCallback((id: string, state: MeshAssetState) => {
     setAssetStates((current) => ({ ...current, [id]: state }))
   }, [])
   const handleRendererError = useCallback((error: Error) => {
@@ -305,29 +322,34 @@ export default function Viewport({ system, region, challenge, selectedId, onSele
 
   useEffect(() => setWebgl(detectWebGL2()), [])
 
-  const readyModels = structures.flatMap((structure) => {
-    const state = assetStates[structure.id]
-    return state.status === 'ready' ? [{ structure, model: state.model }] : []
+  const readyModels = Object.entries(assetStates).flatMap(([associationId, state]) => {
+    const record = anatomyCatalog.meshAssociationsById.get(associationId)
+    return state.status === 'ready' && record
+      ? [{ ...record, model: state.model }]
+      : []
   })
-  const failures = structures.filter((structure) => isFailure(assetStates[structure.id]))
-  const pendingCount = structures.filter((structure) => {
-    const status = assetStates[structure.id].status
-    return status === 'idle' || status === 'loading'
-  }).length
+  const failures = Array.from(anatomyCatalog.meshAssociationsById.values()).flatMap((record) => {
+    const state = assetStates[record.association.id]
+    return isFailure(state) ? [{ ...record, state }] : []
+  })
+  const pendingCount = Object.values(assetStates).filter((state) => state.status === 'idle' || state.status === 'loading').length
   const readyCount = readyModels.length
+  const meshCount = anatomyCatalog.meshAssociationsById.size
   const topStatus = webgl.status === 'checking'
     ? 'CHECKING WEBGL 2'
     : webgl.status === 'unavailable'
       ? '3D RENDERING UNAVAILABLE'
       : failures.length > 0
-        ? `${readyCount}/6 MESHES · ${failures.length} FAILED`
+        ? `${readyCount}/${meshCount} MESHES · ${failures.length} FAILED`
         : pendingCount > 0
-          ? `LOADING MODELS ${readyCount}/6`
-          : 'BODY PARTS3D · 6 SEGMENTS'
+          ? `LOADING MODELS ${readyCount}/${meshCount}`
+          : `BODY PARTS3D · ${meshCount} SEGMENTS`
   const retryFailedAssets = () => {
     setRetryVersions((current) => {
       const next = { ...current }
-      failures.forEach(({ id }) => { next[id] = (next[id] ?? 0) + 1 })
+      failures.forEach(({ association }) => {
+        next[association.id] = (next[association.id] ?? 0) + 1
+      })
       return next
     })
   }
@@ -350,14 +372,14 @@ export default function Viewport({ system, region, challenge, selectedId, onSele
       className="model-stage three-stage"
       data-webgl-state={webgl.status}
       data-ready-count={readyCount}
-      data-model-ready={webgl.status === 'available' && readyCount === structures.length}
+      data-model-ready={webgl.status === 'available' && readyCount === meshCount}
     >
       <div className="stage-grid" />
       {webgl.status === 'available' ? <>
-        {structures.map((structure) => <AssetLoader
-          key={structure.id}
-          structure={structure}
-          retryVersion={retryVersions[structure.id] ?? 0}
+        {Array.from(anatomyCatalog.meshAssociationsById.values(), ({ association }) => <AssetLoader
+          key={association.id}
+          association={association}
+          retryVersion={retryVersions[association.id] ?? 0}
           onStateChange={updateAssetState}
         />)}
         <RendererErrorBoundary
@@ -403,17 +425,16 @@ export default function Viewport({ system, region, challenge, selectedId, onSele
     <div className={`viewport-footer ${showLoadStatus || webgl.status !== 'available' ? 'viewport-footer-status' : ''}`}>
       {webgl.status === 'checking' && <span className="model-status" role="status">Checking WebGL 2 support…</span>}
       {webgl.status === 'unavailable' && <span className="model-status" role="status">The 3D viewport is unavailable.</span>}
-      {showLoadStatus && failures.length === 0 && <span className="model-status" role="status">Loading anatomical meshes: {readyCount} of {structures.length} ready.</span>}
+      {showLoadStatus && failures.length === 0 && <span className="model-status" role="status">Loading anatomical meshes: {readyCount} of {meshCount} ready.</span>}
       {showLoadStatus && failures.length > 0 && <div className="model-status model-status-error" role="alert">
         <span>
-          {readyCount} of {structures.length} meshes loaded; {failures.length} unavailable.
+          {readyCount} of {meshCount} meshes loaded; {failures.length} unavailable.
           {readyCount > 0 ? ' Loaded bones remain interactive.' : ' No bone meshes are available.'}
           {pendingCount > 0 ? ` ${pendingCount} still loading.` : ''}
         </span>
         <ul className="model-error-list">
-          {failures.map((structure) => {
-            const state = assetStates[structure.id]
-            return <li key={structure.id}><strong>{structure.name} ({structure.meshId})</strong>: {failureLabel(state)} — {state.status === 'missing' || state.status === 'invalid' || state.status === 'network-error' ? state.message : ''}</li>
+          {failures.map(({ structure, association, state }) => {
+            return <li key={association.id}><strong>{structure.name} ({association.sourceMeshId})</strong>: {failureLabel(state)} — {state.status === 'missing' || state.status === 'invalid' || state.status === 'network-error' || state.status === 'unsupported' ? state.message : ''}</li>
           })}
         </ul>
         <button className="tool-button" onClick={retryFailedAssets}>Retry failed meshes</button>

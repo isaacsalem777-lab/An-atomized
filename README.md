@@ -30,7 +30,10 @@ npm run test:e2e
 ## What's new in Stage 2
 - Replaced the primitive skull blockout with the frontal bone, left and right zygomatic bones, left and right maxillae, and mandible.
 - Each source mesh remains independently selectable, with hover and teal selection highlights.
-- The source mesh IDs and corresponding FMA identifiers are shown in the structure reference panel.
+- Application-owned anatomy IDs are independent of source meshes; FMA identifiers remain external references in the structure panel.
+- Each anatomy record declares its mesh associations, including source, source mesh ID, format, and URL; association lookup does not depend on array position.
+- Anatomy records include laterality, system, region, descriptions, and optional relationship and educational metadata without placeholder records.
+- Source mesh IDs and FMA identifiers are shown in the structure reference panel.
 - The viewport reports model-loading progress and isolates missing, invalid, or failed OBJ assets; failed meshes can be retried.
 - WebGL 2 availability is checked before rendering, with recovery guidance if the renderer cannot start.
 - Orbit the skull with left-click drag, zoom with the mouse wheel, and pan with right-click drag.
