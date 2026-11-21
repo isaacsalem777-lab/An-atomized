@@ -31,6 +31,8 @@ npm run test:e2e
 - Replaced the primitive skull blockout with the frontal bone, left and right zygomatic bones, left and right maxillae, and mandible.
 - Each source mesh remains independently selectable, with hover and teal selection highlights.
 - The source mesh IDs and corresponding FMA identifiers are shown in the structure reference panel.
+- The viewport reports model-loading progress and isolates missing, invalid, or failed OBJ assets; failed meshes can be retried.
+- WebGL 2 availability is checked before rendering, with recovery guidance if the renderer cannot start.
 - Orbit the skull with left-click drag, zoom with the mouse wheel, and pan with right-click drag.
 - Camera reset and zoom controls are available in the viewport.
 - Existing application layout and reference panel are retained.

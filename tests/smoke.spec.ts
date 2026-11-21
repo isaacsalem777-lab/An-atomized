@@ -10,9 +10,18 @@ const structures = [
 ]
 
 test('loads and independently selects all six source bones', async ({ page }) => {
+  await page.addInitScript(`
+    const nativeFetch = window.fetch.bind(window)
+    window.fetch = async (input, init) => {
+      const url = typeof input === 'string' ? input : input instanceof Request ? input.url : input.href
+      if (url.endsWith('/FJ3200.obj')) await new Promise(resolve => setTimeout(resolve, 500))
+      return nativeFetch(input, init)
+    }
+  `)
   await page.goto('/')
   await expect(page).toHaveTitle('ANATOMY — Training Workstation')
   await expect(page.getByRole('heading', { name: 'Identification challenge' })).toBeVisible()
+  await expect(page.locator('.viewport-footer [role="status"]')).toContainText('Loading anatomical meshes')
 
   const canvas = page.locator('.viewport canvas')
   await expect(canvas).toBeVisible()
@@ -101,4 +110,94 @@ test('navigation adapts between desktop and mobile layouts', async ({ page }) =>
   expect(mobilePanel.y).toBeGreaterThan(mobileCenter.y)
   await expect(page.locator('.viewport canvas')).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+})
+
+test('reports a missing OBJ, keeps other bones interactive, and retries the failed mesh', async ({ page }) => {
+  let shouldFail = true
+  let retryRequests = 0
+  await page.route('**/FJ3287.obj', async route => {
+    if (shouldFail) {
+      await route.fulfill({ status: 404, contentType: 'text/plain', body: 'Not found' })
+      return
+    }
+    retryRequests += 1
+    await route.continue()
+  })
+
+  await page.goto('/')
+  const stage = page.locator('.model-stage')
+  await expect(stage).toHaveAttribute('data-ready-count', '5')
+  const alert = page.getByRole('alert')
+  await expect(alert).toContainText('Left zygomatic bone')
+  await expect(alert).toContainText('Missing asset')
+  await expect(alert).toContainText('Loaded bones remain interactive')
+
+  const canvas = page.locator('.viewport canvas')
+  const bounds = await canvas.boundingBox()
+  if (!bounds) throw new Error('The 3D canvas has no visible bounds')
+  await canvas.click({ position: { x: bounds.width / 2, y: bounds.height * 0.8 } })
+  await expect(page.locator('.challenge-overlay')).toContainText('Selected: Mandible')
+
+  shouldFail = false
+  await page.getByRole('button', { name: 'Retry failed meshes' }).click()
+  await expect(stage).toHaveAttribute('data-ready-count', '6')
+  await expect(page.getByRole('alert')).toHaveCount(0)
+  expect(retryRequests).toBeGreaterThan(0)
+})
+
+test('reports invalid OBJ data without losing the remaining bones', async ({ page }) => {
+  await page.route('**/FJ3392.obj', route => route.fulfill({
+    status: 200,
+    contentType: 'text/plain',
+    body: 'this is not valid OBJ data',
+  }))
+
+  await page.goto('/')
+  const stage = page.locator('.model-stage')
+  await expect(stage).toHaveAttribute('data-ready-count', '5')
+  const alert = page.getByRole('alert')
+  await expect(alert).toContainText('Right zygomatic bone')
+  await expect(alert).toContainText('Invalid model data')
+  await expect(alert).toContainText('No triangle meshes were found')
+
+  const canvas = page.locator('.viewport canvas')
+  const bounds = await canvas.boundingBox()
+  if (!bounds) throw new Error('The 3D canvas has no visible bounds')
+  await canvas.click({ position: { x: bounds.width / 2, y: bounds.height * 0.8 } })
+  await expect(page.locator('.challenge-overlay')).toContainText('Selected: Mandible')
+})
+
+test('reports an OBJ server failure distinctly from missing or invalid data', async ({ page }) => {
+  await page.route('**/FJ3375.obj', route => route.fulfill({
+    status: 503,
+    contentType: 'text/plain',
+    body: 'Temporarily unavailable',
+  }))
+
+  await page.goto('/')
+  await expect(page.locator('.model-stage')).toHaveAttribute('data-ready-count', '5')
+  const alert = page.getByRole('alert')
+  await expect(alert).toContainText('Right maxilla')
+  await expect(alert).toContainText('Network error')
+  await expect(alert).toContainText('HTTP 503')
+})
+
+test('explains unavailable WebGL 2 and keeps non-3D navigation available', async ({ page }) => {
+  await page.addInitScript(`
+    const getContext = HTMLCanvasElement.prototype.getContext
+    HTMLCanvasElement.prototype.getContext = function(type, ...args) {
+      if (type === 'webgl2') return null
+      return getContext.call(this, type, ...args)
+    }
+  `)
+  await page.goto('/')
+
+  await expect(page.locator('.model-stage')).toHaveAttribute('data-webgl-state', 'unavailable')
+  await expect(page.getByRole('alert')).toContainText('3D rendering is unavailable')
+  await expect(page.getByRole('alert')).toContainText('did not provide a WebGL 2 context')
+  await expect(page.getByRole('button', { name: 'Reload page' })).toBeVisible()
+  await expect(page.locator('.viewport canvas')).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Explore', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Anatomical atlas' })).toBeVisible()
 })
