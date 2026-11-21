@@ -37,6 +37,21 @@ npm run test:e2e
 - Challenge and Progress are future destinations. Challenge gameplay and result tracking are not implemented; no performance statistics are displayed.
 - Anatomy records use stable application-owned IDs and explicit mesh associations. FMA identifiers remain external references.
 
+## Data and rendering foundations
+- Anatomy IDs use the application-owned `anatomy:` namespace and are branded
+  separately from external identifiers. Catalog construction checks required
+  identity fields, duplicate IDs and mesh associations, supported formats, and
+  relationship targets.
+- A structure can reference multiple mesh associations. Descriptions,
+  locations, and functions are optional; missing reference text is presented
+  as unavailable rather than invented.
+- The 3D viewport is loaded as a separate JavaScript module. Parsed model
+  geometries and materials are disposed when the viewport is removed.
+- The current runtime still fetches individual OBJ files and parses them on the
+  main thread. The six-mesh prototype has not been benchmarked for large
+  catalogs; worker-based parsing, progressive asset loading, and accelerated
+  picking require measurement before expansion.
+
 ## Asset provenance and scope
 The six unmodified OBJ source meshes are from BodyParts3D release 4.0. They are centered, rotated, and scaled at render time only; the source geometry is not destructively modified.
 

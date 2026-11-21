@@ -95,6 +95,25 @@ test('selection, camera controls, and viewport toggles respond to input', async 
   await expect(page.locator('.model-stage')).toHaveAttribute('data-camera-distance', '4.7')
 })
 
+test('releases the viewport on navigation and reloads selectable anatomy on return', async ({ page }) => {
+  const browserErrors: string[] = []
+  page.on('console', message => {
+    if (message.type() === 'error' || message.type() === 'warning') browserErrors.push(`${message.type()}: ${message.text()}`)
+  })
+  page.on('pageerror', error => browserErrors.push(error.message))
+
+  await page.goto('/')
+  await expect(page.locator('.model-stage')).toHaveAttribute('data-model-ready', 'true')
+  await page.getByRole('button', { name: 'Progress', exact: true }).click()
+  await expect(page.locator('.model-stage')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Explore', exact: true }).click()
+  await expect(page.locator('.model-stage')).toHaveAttribute('data-model-ready', 'true')
+
+  await page.getByRole('button', { name: 'Select Mandible' }).click()
+  await expect(page.locator('.model-stage')).toHaveAttribute('data-selected-id', 'anatomy:bone:mandible')
+  expect(browserErrors).toEqual([])
+})
+
 test('navigation adapts between desktop and mobile layouts', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.goto('/')

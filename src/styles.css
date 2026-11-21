@@ -273,6 +273,34 @@ button:focus-visible, select:focus-visible, input:focus-visible {
 .tool-button:disabled { opacity: .48; cursor: not-allowed; }
 .details-toggle { flex: 0 0 auto; }
 
+.viewport-loading {
+  min-height: 510px;
+  overflow: hidden;
+  border: 1px solid #2d4160;
+  border-radius: 0 0 14px 0;
+  background: #080f19;
+}
+.viewport-loading-header {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 16px;
+  border-bottom: 1px solid #344a68;
+  color: #d4dfef;
+  font-size: 12px;
+}
+.viewport-loading-stage {
+  min-height: 420px;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(ellipse at 49% 43%, #274a7938 0, transparent 62%),
+    linear-gradient(155deg, #0c1726 0%, #080f1a 52%, #060a10 100%);
+  color: var(--secondary);
+  font-size: 14px;
+}
+
 .viewport {
   position: relative;
   overflow: hidden;
@@ -773,6 +801,8 @@ button:focus-visible, select:focus-visible, input:focus-visible {
   .select-wrap select { width: 100%; min-width: 0; max-width: none; font-size: 13px; }
   .details-toggle { min-height: 40px; }
   .model-stage { height: clamp(350px, 47svh, 470px); min-height: 350px; }
+  .viewport-loading { min-height: 0; }
+  .viewport-loading-stage { height: clamp(350px, 47svh, 470px); min-height: 350px; }
   .viewport-top { min-height: 44px; padding: 0 11px; }
   .viewport-breadcrumb { gap: 6px; font-size: 11px; }
   .asset-status { max-width: 160px; font-size: 10px; }

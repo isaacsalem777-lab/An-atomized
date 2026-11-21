@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { anatomyCatalog, anatomyIds, createAnatomyCatalog, structures, type MeshAssociation } from '../src/data/anatomy'
+import { anatomyCatalog, anatomyIds, createAnatomyCatalog, createAnatomyId, structures, type MeshAssociation } from '../src/data/anatomy'
 
 test('uses distinct application IDs and preserves external FMA identifiers', () => {
   expect(structures).toHaveLength(6)
@@ -43,4 +43,26 @@ test('resolves multiple mesh associations to the same stable anatomy ID independ
   expect(catalog.meshAssociationsById.get(replacementAssociation.id)?.structure.id).toBe(structure.id)
   expect(catalog.structuresById.get(structure.id)?.id).toBe('anatomy:bone:zygomatic:left')
   expect(catalog.meshAssociationsById.get(replacementAssociation.id)?.association.sourceMeshId).toBe('zygoma-surface-v2')
+})
+
+test('validates anatomy ID namespaces, mesh association uniqueness, and relationship targets', () => {
+  expect(createAnatomyId('anatomy:bone:frontal')).toBe(anatomyIds.frontalBone)
+  expect(() => createAnatomyId('FMA:FMA52734')).toThrow('IDs must use the anatomy: namespace')
+
+  const frontalBone = anatomyCatalog.structuresById.get(anatomyIds.frontalBone)
+  if (!frontalBone) throw new Error('Frontal bone record is missing')
+  const association = frontalBone.meshAssociations[0]
+  if (!association) throw new Error('Frontal bone mesh association is missing')
+
+  const duplicateAssociation = {
+    ...frontalBone,
+    meshAssociations: [association, association],
+  }
+  expect(() => createAnatomyCatalog([duplicateAssociation])).toThrow('Duplicate mesh association ID')
+
+  const danglingRelationship = {
+    ...frontalBone,
+    relationships: [{ type: 'test-only', targetId: anatomyIds.mandible }],
+  }
+  expect(() => createAnatomyCatalog([danglingRelationship])).toThrow('references unknown relationship target')
 })

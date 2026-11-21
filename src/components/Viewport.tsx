@@ -1,10 +1,11 @@
-import { Component, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { Component, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js'
 import { Eye, EyeOff, Layers3, Rotate3D, RotateCcw } from 'lucide-react'
 import { anatomyCatalog, type AnatomyId, type AnatomyStructure, type MeshAssociation } from '../data/anatomy'
+import { disposeModelResources } from '../utils/disposeModelResources'
 
 type Props = {
   selectedId: AnatomyId | null
@@ -49,21 +50,6 @@ function createInitialAssetStates(): Record<string, MeshAssetState> {
   const states: Record<string, MeshAssetState> = {}
   anatomyCatalog.meshAssociationsById.forEach((_record, id) => { states[id] = { status: 'idle' } })
   return states
-}
-
-function detectWebGL2(): WebGLState {
-  try {
-    const context = document.createElement('canvas').getContext('webgl2')
-    if (!context) {
-      return { status: 'unavailable', message: 'This browser or device did not provide a WebGL 2 context.' }
-    }
-
-    context.getExtension('WEBGL_lose_context')?.loseContext()
-    return { status: 'available' }
-  } catch (error) {
-    const detail = error instanceof Error ? error.message : 'The WebGL 2 check failed.'
-    return { status: 'unavailable', message: detail }
-  }
 }
 
 function validateObjModel(model: THREE.Group): string | null {
@@ -141,7 +127,10 @@ async function loadMeshAsset(association: MeshAssociation, signal: AbortSignal):
   try {
     const model = new OBJLoader().parse(content)
     const validationError = validateObjModel(model)
-    if (validationError) return { status: 'invalid', message: validationError }
+    if (validationError) {
+      disposeModelResources(model)
+      return { status: 'invalid', message: validationError }
+    }
     return { status: 'ready', model }
   } catch (error) {
     const detail = error instanceof Error ? error.message : 'The OBJ parser rejected the data.'
@@ -326,18 +315,30 @@ export default function Viewport({
   const [zoom, setZoom] = useState(4.7)
   const [webgl, setWebgl] = useState<WebGLState>({ status: 'checking' })
   const [assetStates, setAssetStates] = useState(createInitialAssetStates)
+  const assetStatesRef = useRef(assetStates)
+  assetStatesRef.current = assetStates
   const [retryVersions, setRetryVersions] = useState<Record<string, number>>({})
   const updateAssetState = useCallback((id: string, state: MeshAssetState) => {
     setAssetStates((current) => ({ ...current, [id]: state }))
   }, [])
   const handleRendererError = useCallback((error: Error) => {
+    const message = /webgl|context/i.test(error.message)
+      ? 'This browser or device did not provide a WebGL 2 context.'
+      : `The browser found WebGL 2 support, but the 3D renderer could not initialize (${error.message}).`
     setWebgl({
       status: 'unavailable',
-      message: `The browser found WebGL 2 support, but the 3D renderer could not initialize (${error.message}).`,
+      message,
     })
   }, [])
 
-  useEffect(() => setWebgl(detectWebGL2()), [])
+  useEffect(() => () => {
+    const disposedModels = new Set<THREE.Group>()
+    Object.values(assetStatesRef.current).forEach((state) => {
+      if (state.status !== 'ready' || disposedModels.has(state.model)) return
+      disposedModels.add(state.model)
+      disposeModelResources(state.model)
+    })
+  }, [])
 
   const loadedModels = Object.entries(assetStates).flatMap(([associationId, state]) => {
     const record = anatomyCatalog.meshAssociationsById.get(associationId)
@@ -414,13 +415,13 @@ export default function Viewport({
       {webgl.status === 'available' && visibleStructureIds.size === 0 && <div className="model-filter-empty" role="status">
         {matchedStructureCount === 0 ? 'No structures match the selected filters.' : 'All matching structures are hidden.'}
       </div>}
-      {webgl.status === 'available' ? <>
-        {Array.from(anatomyCatalog.meshAssociationsById.values(), ({ association }) => <AssetLoader
-          key={association.id}
-          association={association}
-          retryVersion={retryVersions[association.id] ?? 0}
-          onStateChange={updateAssetState}
-        />)}
+      {webgl.status !== 'unavailable' ? <>
+        {webgl.status === 'available' && Array.from(anatomyCatalog.meshAssociationsById.values(), ({ association }) => <AssetLoader
+            key={association.id}
+            association={association}
+            retryVersion={retryVersions[association.id] ?? 0}
+            onStateChange={updateAssetState}
+          />)}
         <RendererErrorBoundary
           onError={handleRendererError}
           fallback={<div className="model-render-fallback" role="alert">
@@ -433,6 +434,7 @@ export default function Viewport({
             camera={{ position: [0, 0.05, 4.7], fov: 37 }}
             dpr={[1, 1.8]}
             gl={{ antialias: true, alpha: true }}
+            onCreated={() => setWebgl({ status: 'available' })}
             onPointerMissed={() => onSelect(null)}
           >
             <hemisphereLight color="#f0f4fa" groundColor="#172238" intensity={1.05}/>
@@ -445,16 +447,19 @@ export default function Viewport({
             <OrbitControls key={`controls-${resetKey}`} makeDefault enableDamping dampingFactor={0.08} minDistance={3.1} maxDistance={8.5} target={[0,0,0]} />
           </Canvas>
         </RendererErrorBoundary>
-        {labels && <div className="model-label bodyparts-label"><span/> Six skull bones</div>}
-        <div className="view-controls">
-          <button aria-label="Reset camera" onClick={() => {setResetKey(value => value + 1); setZoom(4.7)}} title="Reset camera"><RotateCcw size={15}/></button>
-          <span className="control-divider"/>
-          <button aria-label="Zoom in" onClick={() => adjustZoom(-0.35)} title="Zoom in">＋</button><button aria-label="Zoom out" onClick={() => adjustZoom(0.35)} title="Zoom out">−</button>
-          <span className="control-divider"/>
-          <button className={wire ? 'active' : ''} aria-label="Toggle wireframe" aria-pressed={wire} onClick={() => setWire(value => !value)} title="Toggle wireframe"><Layers3 size={15}/></button>
-          <button className={labels ? 'active' : ''} aria-label="Toggle labels" aria-pressed={labels} onClick={() => setLabels(value => !value)} title="Toggle labels">{labels ? <Eye size={15}/> : <EyeOff size={15}/>}</button>
-          <span className="control-divider"/><span className="orbit-indicator"><Rotate3D size={14}/></span>
-        </div>
+        {webgl.status === 'checking' && webglFallback}
+        {webgl.status === 'available' && <>
+          {labels && <div className="model-label bodyparts-label"><span/> Six skull bones</div>}
+          <div className="view-controls">
+            <button aria-label="Reset camera" onClick={() => {setResetKey(value => value + 1); setZoom(4.7)}} title="Reset camera"><RotateCcw size={15}/></button>
+            <span className="control-divider"/>
+            <button aria-label="Zoom in" onClick={() => adjustZoom(-0.35)} title="Zoom in">＋</button><button aria-label="Zoom out" onClick={() => adjustZoom(0.35)} title="Zoom out">−</button>
+            <span className="control-divider"/>
+            <button className={wire ? 'active' : ''} aria-label="Toggle wireframe" aria-pressed={wire} onClick={() => setWire(value => !value)} title="Toggle wireframe"><Layers3 size={15}/></button>
+            <button className={labels ? 'active' : ''} aria-label="Toggle labels" aria-pressed={labels} onClick={() => setLabels(value => !value)} title="Toggle labels">{labels ? <Eye size={15}/> : <EyeOff size={15}/>}</button>
+            <span className="control-divider"/><span className="orbit-indicator"><Rotate3D size={14}/></span>
+          </div>
+        </>}
       </> : webglFallback}
     </div>
     <div className={`viewport-footer ${showLoadStatus || webgl.status !== 'available' ? 'viewport-footer-status' : ''}`}>

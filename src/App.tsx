@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import {
   ChartNoAxesColumnIncreasing,
   ChevronDown,
@@ -13,10 +13,11 @@ import {
   X,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import Viewport from './components/Viewport'
 import { anatomyCatalog, structures, type AnatomyId } from './data/anatomy'
 
 type Tab = 'Explore' | 'Challenge' | 'Progress'
+
+const Viewport = lazy(() => import('./components/Viewport'))
 
 const nav: { name: Tab; icon: LucideIcon }[] = [
   { name: 'Explore', icon: Compass },
@@ -173,15 +174,20 @@ export default function App() {
                 <Layers size={17}/><span>{showInfo ? 'Hide panel' : 'Show panel'}</span>
               </button>
             </div>
-            <Viewport
-              selectedId={selectedId}
-              onSelect={selectStructure}
-              visibleStructureIds={visibleStructureIds}
-              matchedStructureCount={filteredStructures.length}
-              hiddenCount={hiddenCount}
-              isolationId={isolationId}
-              transparencyById={transparencyById}
-            />
+            <Suspense fallback={<div className="viewport-loading" role="status" aria-busy="true">
+              <div className="viewport-loading-header"><span className="live-dot"/> Preparing the anatomy viewer</div>
+              <div className="viewport-loading-stage">Loading the interactive model…</div>
+            </div>}>
+              <Viewport
+                selectedId={selectedId}
+                onSelect={selectStructure}
+                visibleStructureIds={visibleStructureIds}
+                matchedStructureCount={filteredStructures.length}
+                hiddenCount={hiddenCount}
+                isolationId={isolationId}
+                transparencyById={transparencyById}
+              />
+            </Suspense>
           </div>
 
           {showInfo && <aside className="right-panel" aria-label="Anatomy reference">
@@ -209,11 +215,11 @@ export default function App() {
                   {selected.meshAssociations.map(association => <span key={association.id}>{association.source} mesh: {association.sourceMeshId}<br/></span>)}
                 </p>
                 <div className="panel-section-heading">Overview</div>
-                <p className="info-copy">{selected.description}</p>
+                <p className="info-copy">{selected.description ?? 'No description available.'}</p>
                 <div className="panel-section-heading">Location</div>
-                <p className="info-copy">{selected.location}</p>
+                <p className="info-copy">{selected.location ?? 'No location information available.'}</p>
                 <div className="panel-section-heading">Function</div>
-                <p className="info-copy">{selected.function}</p>
+                <p className="info-copy">{selected.function ?? 'No function information available.'}</p>
               </div>
             </> : <div className="panel-section selection-prompt">
               <p>Select a bone in the model or choose one from the structure index.</p>

@@ -103,3 +103,14 @@ test('keeps keyboard focus visible and honors reduced-motion preferences', async
   await expect(explore).toHaveCSS('outline-style', 'solid')
   await expect(explore).toHaveCSS('transition-duration', '0s')
 })
+
+test('announces the deferred viewport while its module is loading', async ({ page }) => {
+  await page.route('**/Viewport.tsx*', async route => {
+    await new Promise(resolve => setTimeout(resolve, 300))
+    await route.continue()
+  })
+
+  await page.goto('/')
+  await expect(page.locator('.viewport-loading')).toContainText('Preparing the anatomy viewer')
+  await expect(page.locator('.model-stage')).toHaveAttribute('data-model-ready', 'true')
+})
