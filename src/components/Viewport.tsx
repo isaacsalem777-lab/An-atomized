@@ -1,5 +1,5 @@
 import { Component, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Canvas, useThree } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
@@ -18,7 +18,7 @@ type Props = {
   opacityById: Partial<Record<AnatomyId, number>>
 }
 
-type SkeletonAssetState =
+export type SkeletonAssetState =
   | { status: 'idle' | 'loading' }
   | { status: 'ready'; model: THREE.Group; meshesBySourceId: ReadonlyMap<string, THREE.Mesh> }
   | { status: 'missing' | 'invalid' | 'network-error'; message: string }
@@ -28,22 +28,29 @@ type WebGLState =
   | { status: 'available' }
   | { status: 'unavailable'; message: string }
 
-type BoneProps = {
+export type SkeletonMesh = {
   structure: AnatomyStructure
   association: MeshAssociation
   source: THREE.Mesh
+}
+
+type BoneProps = SkeletonMesh & {
   selectedId: AnatomyId | null
   onSelect: (id: AnatomyId) => void
   wire: boolean
   opacity: number
+  highlightIds: ReadonlySet<AnatomyId>
+  highlightColor: string
+  highlightOpacity: number
+  interactive: boolean
 }
 
-type AssetLoaderProps = {
+export type AssetLoaderProps = {
   retryVersion: number
   onStateChange: (state: SkeletonAssetState) => void
 }
 
-type RendererBoundaryProps = {
+export type RendererBoundaryProps = {
   children: ReactNode
   fallback: ReactNode
   onError: (error: Error) => void
@@ -129,7 +136,7 @@ function validateSkeletonModel(model: THREE.Group): { message: string } | { mesh
   return { meshesBySourceId }
 }
 
-async function loadSkeletonAsset(signal: AbortSignal): Promise<SkeletonAssetState> {
+export async function loadSkeletonAsset(signal: AbortSignal): Promise<SkeletonAssetState> {
   let response: Response
   try {
     response = await fetch(skeletonAssetUrl, { signal, cache: 'no-store' })
@@ -183,7 +190,7 @@ async function loadSkeletonAsset(signal: AbortSignal): Promise<SkeletonAssetStat
   return { status: 'ready', model, meshesBySourceId: validation.meshesBySourceId }
 }
 
-function AssetLoader({ retryVersion, onStateChange }: AssetLoaderProps) {
+export function AssetLoader({ retryVersion, onStateChange }: AssetLoaderProps) {
   useEffect(() => {
     const controller = new AbortController()
     onStateChange({ status: 'loading' })
@@ -207,7 +214,7 @@ function AssetLoader({ retryVersion, onStateChange }: AssetLoaderProps) {
   return null
 }
 
-class RendererErrorBoundary extends Component<RendererBoundaryProps, { error: Error | null }> {
+export class RendererErrorBoundary extends Component<RendererBoundaryProps, { error: Error | null }> {
   state = { error: null }
 
   static getDerivedStateFromError(error: Error) {
@@ -223,13 +230,31 @@ class RendererErrorBoundary extends Component<RendererBoundaryProps, { error: Er
   }
 }
 
-function CameraDistance({ distance, target }: { distance: number; target: THREE.Vector3 }) {
+function CameraDistance({ distance, target, smooth = false }: { distance: number; target: THREE.Vector3; smooth?: boolean }) {
   const { camera } = useThree()
+  const destination = useMemo(() => new THREE.Vector3(target.x, target.y, target.z + distance), [distance, target])
+  const animating = useRef(false)
+
   useEffect(() => {
-    camera.position.set(target.x, target.y, target.z + distance)
+    if (!smooth) {
+      camera.position.copy(destination)
+      camera.lookAt(target)
+      camera.updateProjectionMatrix()
+      animating.current = false
+      return
+    }
+    animating.current = true
+  }, [camera, destination, smooth, target])
+
+  useFrame((_, delta) => {
+    if (!animating.current) return
+    camera.position.lerp(destination, 1 - Math.exp(-7 * delta))
     camera.lookAt(target)
-    camera.updateProjectionMatrix()
-  }, [camera, distance, target])
+    if (camera.position.distanceTo(destination) < 0.002) {
+      camera.position.copy(destination)
+      animating.current = false
+    }
+  })
   return null
 }
 
@@ -243,9 +268,24 @@ function CameraProjectionZoom({ zoom }: { zoom: number }) {
   return null
 }
 
-function Bone({ structure, association, source, selectedId, onSelect, wire, opacity }: BoneProps) {
+const noAnatomyIds: ReadonlySet<AnatomyId> = new Set()
+
+function Bone({
+  structure,
+  association,
+  source,
+  selectedId,
+  onSelect,
+  wire,
+  opacity,
+  highlightIds,
+  highlightColor,
+  highlightOpacity,
+  interactive,
+}: BoneProps) {
   const [hovered, setHovered] = useState(false)
-  const active = selectedId === structure.id
+  const selected = selectedId === structure.id
+  const highlighted = selected || highlightIds.has(structure.id)
   const { object, materials } = useMemo(() => {
     const object = source.clone(true)
     const materials: THREE.MeshStandardMaterial[] = []
@@ -289,13 +329,14 @@ function Bone({ structure, association, source, selectedId, onSelect, wire, opac
   useEffect(() => () => materials.forEach((material) => material.dispose()), [materials])
   useEffect(() => {
     materials.forEach((material) => {
-      material.color.set(active ? '#a9eff1' : hovered ? '#f0f4fa' : '#d8dcd5')
-      material.emissive.set(active ? '#154a52' : '#000000')
-      material.emissiveIntensity = active ? opacity <= 40 ? 0.7 : 0.42 : 0
-      material.opacity = opacity / 100
-      material.depthWrite = opacity === 100
-      if (material.transparent !== (opacity < 100)) {
-        material.transparent = opacity < 100
+      const currentOpacity = highlighted && !selected ? highlightOpacity : opacity / 100
+      material.color.set(selected ? '#a9eff1' : highlighted ? highlightColor : hovered ? '#f0f4fa' : '#d8dcd5')
+      material.emissive.set(selected ? '#154a52' : highlighted ? highlightColor : '#000000')
+      material.emissiveIntensity = selected ? opacity <= 40 ? 0.7 : 0.42 : highlighted ? 0.3 : 0
+      material.opacity = currentOpacity
+      material.depthWrite = currentOpacity === 1
+      if (material.transparent !== (currentOpacity < 1)) {
+        material.transparent = currentOpacity < 1
         material.needsUpdate = true
       }
       if (material.wireframe !== wire) {
@@ -303,38 +344,63 @@ function Bone({ structure, association, source, selectedId, onSelect, wire, opac
         material.needsUpdate = true
       }
     })
-  }, [active, hovered, materials, opacity, wire])
+  }, [highlightColor, highlightIds, highlightOpacity, highlighted, hovered, materials, opacity, selected, wire])
 
   return <group
     name={association.id}
-    onClick={(event) => {
+    onClick={interactive ? (event) => {
       event.stopPropagation()
       onSelect(structure.id)
-    }}
-    onPointerOver={(event) => {
+    } : undefined}
+    onPointerOver={interactive ? (event) => {
       event.stopPropagation()
       setHovered(true)
       document.body.style.cursor = 'pointer'
-    }}
-    onPointerOut={() => {
+    } : undefined}
+    onPointerOut={interactive ? () => {
       setHovered(false)
       document.body.style.cursor = 'auto'
-    }}
+    } : undefined}
   >
     <primitive object={object} dispose={null}/>
   </group>
 }
 
-function SkeletonModel({ model, meshes, fitMeshes, selectedId, onSelect, wire, opacityById, resetKey }: {
+export type SkeletonModelProps = {
   model: THREE.Group
-  meshes: readonly { structure: AnatomyStructure; association: MeshAssociation; source: THREE.Mesh }[]
+  meshes: readonly SkeletonMesh[]
   fitMeshes: readonly THREE.Mesh[]
   selectedId: AnatomyId | null
   onSelect: (id: AnatomyId) => void
   wire: boolean
   opacityById: Partial<Record<AnatomyId, number>>
   resetKey: number
-}) {
+  highlightIds?: ReadonlySet<AnatomyId>
+  highlightColor?: string
+  highlightOpacity?: number
+  interactive?: boolean
+  controlsEnabled?: boolean
+  fitScale?: number
+  smoothFit?: boolean
+}
+
+export function SkeletonModel({
+  model,
+  meshes,
+  fitMeshes,
+  selectedId,
+  onSelect,
+  wire,
+  opacityById,
+  resetKey,
+  highlightIds = noAnatomyIds,
+  highlightColor = '#456eff',
+  highlightOpacity = 1,
+  interactive = true,
+  controlsEnabled = true,
+  fitScale = 1,
+  smoothFit = false,
+}: SkeletonModelProps) {
   const { size } = useThree()
   const target = useMemo(() => {
     const bounds = new THREE.Box3()
@@ -350,26 +416,50 @@ function SkeletonModel({ model, meshes, fitMeshes, selectedId, onSelect, wire, o
     const availableHeight = Math.max(size.height - topInset - bottomInset, size.height * 0.5)
     const horizontalFit = modelSize.x / 2 / Math.tan(horizontalHalfAngle)
     const verticalFit = modelSize.y / 2 / Math.tan(verticalHalfAngle) * size.height / availableHeight
-    const fitDistance = (Math.max(horizontalFit, verticalFit) + modelSize.z / 2) * 1.08
+    const fitDistance = (Math.max(horizontalFit, verticalFit) + modelSize.z / 2) * 1.08 * fitScale
     const visibleHeight = 2 * fitDistance * Math.tan(verticalHalfAngle)
     center.y += ((topInset - bottomInset) / 2 / Math.max(size.height, 1)) * visibleHeight
     return { center, fitDistance }
-  }, [fitMeshes, model, size.height, size.width])
+  }, [fitMeshes, fitScale, model, size.height, size.width])
   const { center, fitDistance } = target
 
   return <>
-    <CameraDistance key={`camera-${resetKey}`} distance={fitDistance} target={center}/>
-    <SkeletonNodes meshes={meshes} selectedId={selectedId} onSelect={onSelect} wire={wire} opacityById={opacityById}/>
-    <OrbitControls key={`controls-${resetKey}-${fitDistance}`} makeDefault enableDamping dampingFactor={0.08} minDistance={fitDistance * 0.3} maxDistance={fitDistance * 3} target={center}/>
+    <CameraDistance key={`camera-${resetKey}`} distance={fitDistance} target={center} smooth={smoothFit}/>
+    <SkeletonNodes
+      meshes={meshes}
+      selectedId={selectedId}
+      onSelect={onSelect}
+      wire={wire}
+      opacityById={opacityById}
+      highlightIds={highlightIds}
+      highlightColor={highlightColor}
+      highlightOpacity={highlightOpacity}
+      interactive={interactive}
+    />
+    {controlsEnabled && <OrbitControls key={`controls-${resetKey}-${fitDistance}`} makeDefault enableDamping dampingFactor={0.08} minDistance={fitDistance * 0.3} maxDistance={fitDistance * 3} target={center}/>}
   </>
 }
 
-function SkeletonNodes({ meshes, selectedId, onSelect, wire, opacityById }: {
-  meshes: readonly { structure: AnatomyStructure; association: MeshAssociation; source: THREE.Mesh }[]
+function SkeletonNodes({
+  meshes,
+  selectedId,
+  onSelect,
+  wire,
+  opacityById,
+  highlightIds,
+  highlightColor,
+  highlightOpacity,
+  interactive,
+}: {
+  meshes: readonly SkeletonMesh[]
   selectedId: AnatomyId | null
   onSelect: (id: AnatomyId) => void
   wire: boolean
   opacityById: Partial<Record<AnatomyId, number>>
+  highlightIds: ReadonlySet<AnatomyId>
+  highlightColor: string
+  highlightOpacity: number
+  interactive: boolean
 }) {
   return <group>
     {meshes.map(({ structure, association, source }) => <Bone
@@ -381,6 +471,10 @@ function SkeletonNodes({ meshes, selectedId, onSelect, wire, opacityById }: {
       onSelect={onSelect}
       wire={wire}
       opacity={opacityById[structure.id] ?? 100}
+      highlightIds={highlightIds}
+      highlightColor={highlightColor}
+      highlightOpacity={highlightOpacity}
+      interactive={interactive}
     />)}
   </group>
 }

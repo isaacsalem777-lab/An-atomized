@@ -31,7 +31,14 @@ The browser tests use Playwright and Chromium. Install Chromium once with `npx p
 - The skull region exposes 8 cranial-bone and 14 facial-bone records as separate Atlas groups. The hyoid is placed in the Neck region based on its source description; its original source grouping remains in the source metadata.
 - Select structures in 3D or in the searchable index. Region filters frame the matching geometry; hide/show, isolation, opacity, camera orbit, zoom, and pan are available.
 - The application preserves the six original facial-structure ANATOMY IDs and assigns application-owned stable IDs to the remaining source structures.
-- Challenge and Progress are unavailable destinations. Challenge gameplay and result tracking are not implemented; no performance statistics are displayed.
+
+## Skull Challenge
+
+- The first playable challenge covers 14 cranial and facial bone names using 22 independently mapped source structures from the bundled GLB.
+- Paired left/right bones keep separate geometry and application IDs, highlight together, and accept their shared bone name.
+- The session has cranial, major facial, and smaller facial stages, a name-free real-geometry preview of the next target, hints, answer feedback, replay, and keyboard/touch input.
+- Results exist only for the current session. No challenge history, accuracy, timing, or persistent progress statistics are recorded or displayed; Progress remains unavailable.
+- Challenge geometry is attributed to BodyParts3D 3.0 and its CC BY-SA 2.1 Japan license, with the upstream OrganUI adaptation documented in the bundled asset records.
 
 ## Model provenance and scope
 
@@ -46,6 +53,6 @@ The source metadata is retained in [skeleton-structures.json](./src/data/skeleto
 ## Data and rendering foundations
 
 - Catalog identity uses the application-owned `anatomy:` namespace, separate from FMA and BodyParts3D identifiers. Catalog validation checks identity fields, duplicate external identifiers, mesh associations, supported formats, and relationship targets.
-- The GLB is requested and parsed once. Its structure IDs and external identifiers are checked against the catalog before the 242 meshes become interactive.
+- The GLB is requested and parsed once per active Atlas or Challenge session. Its structure IDs and external identifiers are checked against the catalog before meshes become interactive; the Challenge's target and preview share that parsed model.
 - Parsed model geometries, materials, and textures are disposed when the viewport is removed. The viewport is a lazy JavaScript module.
-- Challenge gameplay, learning progress, and additional anatomical systems remain future work.
+- Learning progress and additional anatomical systems remain future work.

@@ -20,12 +20,12 @@ test('Atlas is the honest default and fabricated dashboard content is absent', a
   expect(await page.locator('.atrium-environment').evaluate(element => getComputedStyle(element).pointerEvents)).toBe('none')
 })
 
-test('Challenge and Progress explain their real availability without fake metrics', async ({ page }) => {
+test('Challenge is playable and Progress does not show unrecorded metrics', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: 'Challenge', exact: true }).click()
-  await expect(page.getByRole('heading', { name: 'Challenge sessions are not available yet' })).toBeVisible()
-  await expect(page.locator('.future-state')).toContainText('Timed rounds, answer validation, and scoring are not implemented.')
-  await expect(page.getByRole('button', { name: 'START CHALLENGE' })).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: 'Learn the bones of the skull' })).toBeVisible()
+  await expect(page.locator('.challenge-intro')).toContainText('14 cranial and facial bone names')
+  await expect(page.getByRole('button', { name: 'Start skull challenge' })).toBeVisible()
   await expect(page.locator('.stat-tile')).toHaveCount(0)
 
   await page.getByRole('button', { name: 'Progress', exact: true }).click()
@@ -96,7 +96,7 @@ test('filters reflect only catalog anatomy and mobile navigation remains usable 
   await expect(page.getByRole('heading', { name: 'Progress tracking is not available yet' })).toBeVisible()
 
   await page.getByRole('button', { name: 'Challenge', exact: true }).click()
-  await expect(page.getByRole('heading', { name: 'Challenge sessions are not available yet' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Learn the bones of the skull' })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
   expect(browserErrors).toEqual([])
 })

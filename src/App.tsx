@@ -18,6 +18,7 @@ import { anatomyCatalog, structures, type AnatomyId } from './data/anatomy'
 type Tab = 'Atlas' | 'Challenge' | 'Progress'
 
 const Viewport = lazy(() => import('./components/Viewport'))
+const SkullChallenge = lazy(() => import('./components/SkullChallenge'))
 
 const nav: { name: Tab; icon: LucideIcon }[] = [
   { name: 'Atlas', icon: Compass },
@@ -152,16 +153,16 @@ export default function App() {
         <button className="top-icon" aria-label="Help" title="Help" onClick={() => setHelpOpen(true)}><CircleHelp size={19}/></button>
       </header>
 
-      <div className={`page-content ${tab === 'Atlas' ? 'atlas-page' : 'future-page'}`}>
+      <div className={`page-content ${tab === 'Atlas' ? 'atlas-page' : tab === 'Challenge' ? 'challenge-page' : 'future-page'}`}>
         <div className="page-heading">
           <div>
-            <p className="eyebrow">{tab === 'Atlas' ? 'Interactive anatomy' : 'Coming later'}</p>
+            <p className="eyebrow">{tab === 'Atlas' ? 'Interactive anatomy' : tab === 'Challenge' ? 'Interactive identification' : 'Coming later'}</p>
             <h1>{tab === 'Atlas' ? 'Anatomy Atlas' : tab}</h1>
             <p className="page-description">
               {tab === 'Atlas'
                 ? `Browse ${structures.length} selectable structures across the skull, neck, spine, thorax, pelvis, and limbs. This is a simplified adult-male reference model with documented omissions and combined meshes.`
                 : tab === 'Challenge'
-                  ? 'Identification challenges are not available yet.'
+                  ? 'Identify the cranial and facial bones using the actual segmented skull geometry.'
                   : 'Progress tracking is not available yet.'}
             </p>
           </div>
@@ -346,14 +347,14 @@ export default function App() {
               </div>) : <p className="filter-empty-message" role="status">{normalizedSearch ? 'No structures match your search.' : 'No structures match the selected filters.'}</p>}
             </div>
           </aside>}
-        </div> : <section className="future-state" aria-labelledby="future-state-title">
-          <div className="future-state-icon">{tab === 'Challenge' ? <Target size={24}/> : <ChartNoAxesColumnIncreasing size={24}/>}</div>
+        </div> : tab === 'Challenge' ? <Suspense fallback={<div className="challenge-loading" role="status">Preparing the skull challenge…</div>}>
+          <SkullChallenge onReturn={() => setTab('Atlas')}/>
+        </Suspense> : <section className="future-state" aria-labelledby="future-state-title">
+          <div className="future-state-icon"><ChartNoAxesColumnIncreasing size={24}/></div>
           <p className="future-state-label">Not available yet</p>
-          <h2 id="future-state-title">{tab === 'Challenge' ? 'Challenge sessions are not available yet' : 'Progress tracking is not available yet'}</h2>
+          <h2 id="future-state-title">Progress tracking is not available yet</h2>
           <p>
-            {tab === 'Challenge'
-              ? 'Timed rounds, answer validation, and scoring are not implemented. Browse the available structures in the Atlas in the meantime.'
-              : 'Your learning history will appear here after real challenge results can be recorded. No progress has been tracked.'}
+            Your learning history will appear here after challenge results can be recorded. No progress has been tracked.
           </p>
           <button className="primary-button" onClick={() => setTab('Atlas')}>Open Atlas<ChevronRight size={18}/></button>
         </section>}

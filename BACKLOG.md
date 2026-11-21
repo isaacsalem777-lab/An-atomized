@@ -21,28 +21,29 @@ reorder priorities; explain any reprioritization in the note below.
   region contains 8 cranial-bone records and 14 facial-bone records. The hyoid
   is placed in the Neck region based on the source description; its original
   source grouping is retained in the source metadata.
+- The skull identification session is playable end to end across three stages:
+  14 answer targets cover all 22 cataloged cranial and facial structures.
+  Paired source meshes highlight independently but accept a shared answer;
+  results remain session-only and are not presented as saved learning progress.
 - The source subset is incomplete and simplified: it omits the coccyx, teeth,
   and ear ossicles; hip bones and foot sesamoids are combined meshes; the
   lower costal-cartilage interpretation is inferred by the source. It is an
   adult-male reference model without expert review.
-- Challenge gameplay and Progress tracking are not implemented. Do not add
-  simulated performance data.
+- Progress tracking is not implemented. Do not add simulated performance data.
 
 ## Priorities
 
-### 1. Implement the skull identification challenge
+### Completed milestone: skull identification challenge
 
-- **Why it matters:** The Atlas exposes the source-backed 8 cranial and
-  14 facial bone structures with independent paired geometry.
-- **Work:** Build the ordered curriculum from those real structures. Keep
-  left/right meshes independent while accepting the shared bone name in the
-  basic challenge. Add answer input, hints, feedback, advancement, and
-  completion.
-- **Verify completion:** Test correct and incorrect answers, every supported
-  target, progression, restart, and completion against the actual GLB. Do not
-  include absent geometry or fabricate statistics.
+- **Delivered:** Three ordered stages, 14 canonical answers mapped to 22 real
+  skull records, paired-structure highlighting, next-target preview, hints,
+  answer feedback, completion, replay, and responsive on-screen keyboard.
+- **Verification:** End-to-end tests exercise every target, incorrect-answer
+  retention, paired mappings, keyboard input, mobile width, and full replay.
+  The viewport and preview share the validated GLB parse; no progress metrics
+  are persisted or fabricated.
 
-### 2. Add source-grounded reference content
+### 1. Add source-grounded reference content
 
 - **Why it matters:** Descriptions, functions, and relationships need
   traceable evidence; missing information must remain visibly missing.
@@ -53,7 +54,7 @@ reorder priorities; explain any reprioritization in the note below.
   identities, and relationship targets; every new anatomical claim has an
   attributable source.
 
-### 3. Qualify additional anatomical coverage
+### 2. Qualify additional anatomical coverage
 
 - **Why it matters:** The current 242-structure model is a curated partial
   skeleton, not a complete skeleton or full-body model.
@@ -64,7 +65,7 @@ reorder priorities; explain any reprioritization in the note below.
   identity mappings, and preserve separate left/right structures and
   multi-mesh associations where the source supports them.
 
-### 4. Expand Atlas to additional anatomical systems
+### 3. Expand Atlas to additional anatomical systems
 
 - **Why it matters:** The eventual Atlas must support the systems listed in
   the product specification, not imply that skeletal coverage is complete.
@@ -73,7 +74,7 @@ reorder priorities; explain any reprioritization in the note below.
 - **Verify completion:** Each system has validated geometry-to-structure
   associations, attribution, and honest coverage documentation.
 
-### 5. Add genuine learning progress
+### 4. Add genuine learning progress
 
 - **Why it matters:** Progress is useful only when derived from actual,
   completed learning sessions.
@@ -83,7 +84,7 @@ reorder priorities; explain any reprioritization in the note below.
 - **Verify completion:** Tests prove every displayed value derives from real
   results and survives the documented lifecycle; no placeholder metrics.
 
-### 6. Measure viewport performance when evidence warrants it
+### 5. Measure viewport performance when evidence warrants it
 
 - **Why it matters:** The model has 242 meshes and approximately 277,228
   triangles; optimize only against a demonstrated bottleneck.
@@ -101,9 +102,8 @@ implementation milestone.
 
 ## Reprioritization note
 
-The product specification prioritizes Atlas organization and the skull
-challenge ahead of general measurement or cosmetic work. This milestone adds
-source-subgroup browsing and the verified 8/14 skull grouping. The next
-highest-value deliverable is the skull challenge using the integrated
-geometry. Documented omissions remain explicit rather than being filled with
-unverified anatomy.
+The product specification prioritizes actual anatomical content and complete
+learning experiences. The skull challenge is now complete against the
+integrated geometry; the next highest-value work is to improve source-grounded
+reference content and qualify additional real skeletal coverage. Documented
+omissions remain explicit rather than being filled with unverified anatomy.
