@@ -1,4 +1,4 @@
-# Contributing to ANATOMY
+# Contributing to An-Atomized
 
 This project is a learning prototype. Keep changes small, maintainable, and
 focused on the requested task.

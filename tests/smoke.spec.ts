@@ -17,7 +17,7 @@ test('loads and selects source structures across the catalog', async ({ page }) 
     await route.continue()
   })
   await page.goto('/')
-  await expect(page).toHaveTitle('ANATOMY — Anatomy Atlas')
+  await expect(page).toHaveTitle('An-Atomized — Anatomy Atlas')
   await expect(page.getByRole('heading', { name: 'Anatomy Atlas' })).toBeVisible()
   await expect(page.locator('.viewport-footer [role="status"]')).toContainText('Loading the skeleton model')
 

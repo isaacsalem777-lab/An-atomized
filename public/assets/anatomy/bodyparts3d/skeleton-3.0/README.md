@@ -10,7 +10,7 @@ This directory contains the pinned OrganUI Skeleton adaptation of BodyParts3D 3.
 - The structure names and descriptions in `src/data/skeleton-structures.json` are derived from OrganUI's `src/anatomy.ts`. That metadata is provided under the upstream project's MIT license, included as [ORGANUI-LICENSE.txt](./ORGANUI-LICENSE.txt). This MIT license does not apply to the model.
 - The checked-in `manifest.json` identifies all 242 model nodes, external identifiers, source names, per-input checksums, and the transformed asset checksum. `selected-parts.tsv` is the source selection table.
 
-OrganUI selected and converted source meshes, welded duplicate vertices, simplified the model from approximately 2,135,400 to 277,228 triangles, centered and scaled it, converted the axes to Y-up, recalculated smooth normals, and assigned illustrative colors. ANATOMY retains the geometry and source identifiers but displays it with a neutral ivory material. The bundled GLB is 5,221,116 bytes with SHA-256 `c68b05d97d70c4d33363bf71d9885c191eb25f61a82dbba935a726ddd8e60ac8`.
+OrganUI selected and converted source meshes, welded duplicate vertices, simplified the model from approximately 2,135,400 to 277,228 triangles, centered and scaled it, converted the axes to Y-up, recalculated smooth normals, and assigned illustrative colors. An-Atomized retains the geometry and source identifiers but displays it with a neutral ivory material. The bundled GLB is 5,221,116 bytes with SHA-256 `c68b05d97d70c4d33363bf71d9885c191eb25f61a82dbba935a726ddd8e60ac8`.
 
 ## Coverage and limitations
 
@@ -19,4 +19,4 @@ OrganUI selected and converted source meshes, welded duplicate vertices, simplif
 - The source describes its lower costal-cartilage interpretation as inferred.
 - This is a simplified single adult-male reference model, not an expert-reviewed or patient-specific model. It is for educational exploration, not clinical use.
 
-Do not infer missing anatomy or relationships from this subset. The ANATOMY catalog preserves the source's identifiers and notes and assigns separate application-owned IDs.
+Do not infer missing anatomy or relationships from this subset. The An-Atomized catalog preserves the source's identifiers and notes and assigns separate application-owned IDs.

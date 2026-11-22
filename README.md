@@ -1,6 +1,6 @@
-# ANATOMY — Interactive Anatomy Atlas
+# An-Atomized — Interactive Anatomy Atlas
 
-ANATOMY is a React + TypeScript anatomy learning prototype with a live WebGL viewport and an individually selectable, source-attributed 242-structure skeleton.
+An-Atomized is a React + TypeScript anatomy learning prototype with a live WebGL viewport and an individually selectable, source-attributed 242-structure skeleton.
 
 ## Requirements and local development
 
@@ -30,7 +30,7 @@ The browser tests use Playwright and Chromium. Install Chromium once with `npx p
 - Structures are organized by system, region, and source subgroup, with separate left and right records where the source provides them.
 - The skull region exposes 8 cranial-bone and 14 facial-bone records as separate Atlas groups. The hyoid is placed in the Neck region based on its source description; its original source grouping remains in the source metadata.
 - Select structures in 3D or in the searchable index. Region filters frame the matching geometry; hide/show, isolation, opacity, camera orbit, zoom, and pan are available.
-- The application preserves the six original facial-structure ANATOMY IDs and assigns application-owned stable IDs to the remaining source structures.
+- The application preserves the six original facial-structure application IDs and assigns application-owned stable IDs to the remaining source structures.
 
 ## Skull Challenge
 

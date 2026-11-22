@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test'
 test('Atlas is the honest default and fabricated dashboard content is absent', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.goto('/')
-  await expect(page).toHaveTitle('ANATOMY — Anatomy Atlas')
+  await expect(page).toHaveTitle('An-Atomized — Anatomy Atlas')
   await expect(page.locator('.model-stage')).toHaveAttribute('data-model-ready', 'true')
   await expect(page.getByRole('heading', { name: 'Anatomy Atlas' })).toBeVisible()
   await expect(page.locator('.main-nav .nav-item.selected')).toHaveText('Atlas')

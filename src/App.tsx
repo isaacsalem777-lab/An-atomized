@@ -126,7 +126,7 @@ export default function App() {
     <aside className="sidebar">
       <div className="brand">
         <div className="brand-mark" aria-hidden="true"><span/><span/><span/></div>
-        <span className="brand-name">ANATOMY</span>
+        <span className="brand-name">An-Atomized</span>
       </div>
       <nav className="main-nav" aria-label="Primary navigation">
         {nav.map(({ name, icon: Icon }) => <button
@@ -148,7 +148,7 @@ export default function App() {
     <main className="main-area">
       <header className="topbar">
         <div className="topbar-left">
-          <div className="breadcrumb"><span>ANATOMY</span><ChevronRight size={14}/><strong>{tab}</strong></div>
+          <div className="breadcrumb"><span>An-Atomized</span><ChevronRight size={14}/><strong>{tab}</strong></div>
         </div>
         <button className="top-icon" aria-label="Help" title="Help" onClick={() => setHelpOpen(true)}><CircleHelp size={19}/></button>
       </header>
