@@ -8,12 +8,15 @@ import {
   Eye,
   EyeOff,
   Layers,
+  ArrowRight,
   Search,
   Target,
   X,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { anatomyCatalog, structures, type AnatomyId } from './data/anatomy'
+import ChapterGrid from './components/ChapterGrid'
+import ChapterView from './components/ChapterView'
 
 type Tab = 'Atlas' | 'Challenge' | 'Progress'
 
@@ -35,6 +38,8 @@ function matchesFilters(structure: typeof structures[number], system: string, re
 }
 
 export default function App() {
+  const [hasStarted, setHasStarted] = useState(false)
+  const [chapterId, setChapterId] = useState<number | null>(null)
   const [tab, setTab] = useState<Tab>('Atlas')
   const [system, setSystem] = useState('All systems')
   const [region, setRegion] = useState('All regions')
@@ -122,7 +127,62 @@ export default function App() {
     setSearchOpen(!searchOpen)
   }
 
-  return <div className="app-shell">
+  if (!hasStarted) return <main className="title-screen" aria-labelledby="title-screen-heading">
+    <div className="title-grid" aria-hidden="true"/>
+    <header className="title-screen-header">
+      <div className="title-brand">
+        <div className="brand-mark" aria-hidden="true"><span/><span/><span/></div>
+        <span>AN-ATOMIZED</span>
+      </div>
+      <span className="title-header-label"><span/> ANATOMY / INTERACTIVE</span>
+    </header>
+
+    <section className="title-hero">
+      <div className="title-copy">
+        <p className="title-eyebrow"><span>01</span> &nbsp; ANATOMY, DECONSTRUCTED</p>
+        <h1 id="title-screen-heading" aria-label="AN-ATOMIZED">
+          <span className="title-line">AN<span className="title-hyphen">-</span></span>
+          <span className="title-word">ATOMIZED</span>
+        </h1>
+        <p className="title-description">Explore the human form.<br/>One structure at a time.</p>
+        <button className="title-start-button" onClick={() => setHasStarted(true)}>
+          <span>START</span><ArrowRight size={20} strokeWidth={1.8}/>
+        </button>
+        <p className="title-footnote"><span/> 3D ANATOMY ATLAS <span className="title-footnote-divider">/</span> EDUCATIONAL PREVIEW</p>
+      </div>
+
+      <div className="title-visual" aria-hidden="true">
+        <div className="title-visual-glow"/>
+        <div className="title-orbit title-orbit-outer"/>
+        <div className="title-orbit title-orbit-middle"/>
+        <div className="title-orbit title-orbit-inner"/>
+        <div className="title-axis title-axis-horizontal"/>
+        <div className="title-axis title-axis-vertical"/>
+        <div className="title-core"><span/><i/><b/></div>
+        <div className="title-orbit-dot title-orbit-dot-red"/>
+        <div className="title-orbit-dot title-orbit-dot-blue"/>
+        <span className="title-visual-code title-visual-code-top">FIG. 001 <span>/</span> HUMAN FORM</span>
+        <span className="title-visual-code title-visual-code-bottom">STRUCTURE <span>+ </span> SYSTEM</span>
+      </div>
+    </section>
+
+    <footer className="title-screen-footer">
+      <span>AN-ATOMIZED <span className="title-footer-muted">© 2026</span></span>
+      <span className="title-footer-center">A STUDY IN STRUCTURE</span>
+      <span className="title-footer-status"><span/> SYSTEM READY</span>
+    </footer>
+  </main>
+
+  if (hasStarted && chapterId === null) {
+    return <ChapterGrid onChapterSelect={setChapterId}/>
+  }
+
+  const showSkeletonApp = chapterId === 1
+
+  return (
+    <div className="app-shell">
+      {showSkeletonApp ? (
+        <>
     <aside className="sidebar">
       <div className="brand">
         <div className="brand-mark" aria-hidden="true"><span/><span/><span/></div>
@@ -375,5 +435,10 @@ export default function App() {
         <button className="tool-button help-close-button" onClick={() => setHelpOpen(false)}>Close help</button>
       </section>
     </div>}
+      </>
+    ) : chapterId !== null ? (
+      <ChapterView chapterId={chapterId} onBack={() => setChapterId(null)}/>
+    ) : null}
   </div>
+  )
 }

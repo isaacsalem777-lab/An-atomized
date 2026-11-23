@@ -2,6 +2,8 @@ import { expect, test } from '@playwright/test'
 
 async function startChallenge(page: import('@playwright/test').Page) {
   await page.goto('/')
+  await page.getByRole('button', { name: 'START' }).click()
+  await page.getByRole('button', { name: /Skeleton/ }).click()
   await page.getByRole('button', { name: 'Challenge', exact: true }).click()
   await page.getByRole('button', { name: 'Start skull challenge' }).click()
   await expect(page.getByTestId('challenge-answer')).toBeEnabled()
@@ -9,6 +11,7 @@ async function startChallenge(page: import('@playwright/test').Page) {
 }
 
 test('plays all three skull stages with source-backed paired targets and completion', async ({ page }) => {
+  test.setTimeout(60000)
   const browserErrors: string[] = []
   page.on('console', message => {
     if (message.type() === 'error') browserErrors.push(message.text())

@@ -15,6 +15,8 @@ const anatomy = [
 
 async function openAtlas(page: import('@playwright/test').Page) {
   await page.goto('/')
+  await page.getByRole('button', { name: 'START' }).click()
+  await page.getByRole('button', { name: /Skeleton/ }).click()
   await page.getByRole('button', { name: 'Atlas', exact: true }).click()
   await expect(page.locator('.model-stage')).toHaveAttribute('data-model-ready', 'true')
 }
@@ -127,6 +129,8 @@ test('adjusts opacity while retaining selection on a translucent 3D structure', 
 test('keeps reference controls usable and the layout within mobile width', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
+  await page.getByRole('button', { name: 'START' }).click()
+  await page.getByRole('button', { name: /Skeleton/ }).click()
   await expect(page.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible()
   await page.getByRole('button', { name: 'Atlas', exact: true }).click()
   await expect(page.locator('.model-stage')).toHaveAttribute('data-model-ready', 'true')

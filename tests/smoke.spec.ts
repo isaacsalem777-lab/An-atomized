@@ -17,7 +17,9 @@ test('loads and selects source structures across the catalog', async ({ page }) 
     await route.continue()
   })
   await page.goto('/')
-  await expect(page).toHaveTitle('An-Atomized — Anatomy Atlas')
+  await expect(page).toHaveTitle('AN-ATOMIZED — Anatomy Atlas')
+  await page.getByRole('button', { name: 'START' }).click()
+  await page.getByRole('button', { name: /Skeleton/ }).click()
   await expect(page.getByRole('heading', { name: 'Anatomy Atlas' })).toBeVisible()
   await expect(page.locator('.viewport-footer [role="status"]')).toContainText('Loading the skeleton model')
 
@@ -51,6 +53,8 @@ test('loads and selects source structures across the catalog', async ({ page }) 
 test('selection, highlighting, camera controls, and viewport toggles respond to input', async ({ page }) => {
   test.setTimeout(90000)
   await page.goto('/')
+  await page.getByRole('button', { name: 'START' }).click()
+  await page.getByRole('button', { name: /Skeleton/ }).click()
 
   const canvas = page.locator('.viewport canvas')
   const stage = page.locator('.model-stage')
@@ -107,6 +111,8 @@ test('releases the viewport on navigation and reloads selectable anatomy on retu
   page.on('pageerror', error => browserErrors.push(error.message))
 
   await page.goto('/')
+  await page.getByRole('button', { name: 'START' }).click()
+  await page.getByRole('button', { name: /Skeleton/ }).click()
   const stage = page.locator('.model-stage')
   await expect(stage).toHaveAttribute('data-model-ready', 'true')
   await page.getByRole('button', { name: 'Progress', exact: true }).click()
@@ -122,6 +128,8 @@ test('releases the viewport on navigation and reloads selectable anatomy on retu
 test('navigation adapts between desktop and mobile layouts', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.goto('/')
+  await page.getByRole('button', { name: 'START' }).click()
+  await page.getByRole('button', { name: /Skeleton/ }).click()
   await expect(page.locator('.sidebar')).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible()
   const desktopCenter = await page.locator('.center-column').boundingBox()
@@ -155,6 +163,8 @@ test('reports a missing GLB and retries the complete model load', async ({ page 
   })
 
   await page.goto('/')
+  await page.getByRole('button', { name: 'START' }).click()
+  await page.getByRole('button', { name: /Skeleton/ }).click()
   const stage = page.locator('.model-stage')
   await expect(stage).toHaveAttribute('data-ready-count', '0')
   const alert = page.getByRole('alert')
@@ -176,6 +186,8 @@ test('reports invalid GLB data without treating it as a valid empty model', asyn
   }))
 
   await page.goto('/')
+  await page.getByRole('button', { name: 'START' }).click()
+  await page.getByRole('button', { name: /Skeleton/ }).click()
   const stage = page.locator('.model-stage')
   await expect(stage).toHaveAttribute('data-ready-count', '0')
   const alert = page.getByRole('alert')
@@ -192,6 +204,8 @@ test('reports a GLB server failure distinctly from missing or invalid data', asy
   }))
 
   await page.goto('/')
+  await page.getByRole('button', { name: 'START' }).click()
+  await page.getByRole('button', { name: /Skeleton/ }).click()
   const alert = page.getByRole('alert')
   await expect(alert).toContainText('Network error')
   await expect(alert).toContainText('HTTP 503')
@@ -206,6 +220,8 @@ test('explains unavailable WebGL 2 and keeps non-3D navigation available', async
     }
   `)
   await page.goto('/')
+  await page.getByRole('button', { name: 'START' }).click()
+  await page.getByRole('button', { name: /Skeleton/ }).click()
 
   await expect(page.locator('.model-stage')).toHaveAttribute('data-webgl-state', 'unavailable')
   await expect(page.getByRole('alert')).toContainText('3D rendering is unavailable')

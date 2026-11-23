@@ -1,9 +1,25 @@
 import { expect, test } from '@playwright/test'
 
+test('shows the AN-ATOMIZED title screen and opens the Atlas from Start', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/')
+  await expect(page).toHaveTitle('AN-ATOMIZED — Anatomy Atlas')
+  await expect(page.getByRole('heading', { name: 'AN-ATOMIZED' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'START' })).toBeVisible()
+  await expect(page.locator('.model-stage')).toHaveCount(0)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+  await page.getByRole('button', { name: 'START' }).click()
+  await expect(page.getByRole('heading', { name: 'Choose a chapter' })).toBeVisible()
+  await page.getByRole('button', { name: /Skeleton/ }).click()
+  await expect(page.getByRole('heading', { name: 'Anatomy Atlas' })).toBeVisible()
+})
+
 test('Atlas is the honest default and fabricated dashboard content is absent', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.goto('/')
-  await expect(page).toHaveTitle('An-Atomized — Anatomy Atlas')
+  await page.getByRole('button', { name: 'START' }).click()
+  await page.getByRole('button', { name: /Skeleton/ }).click()
+  await expect(page).toHaveTitle('AN-ATOMIZED — Anatomy Atlas')
   await expect(page.locator('.model-stage')).toHaveAttribute('data-model-ready', 'true')
   await expect(page.getByRole('heading', { name: 'Anatomy Atlas' })).toBeVisible()
   await expect(page.locator('.main-nav .nav-item.selected')).toHaveText('Atlas')
@@ -22,6 +38,8 @@ test('Atlas is the honest default and fabricated dashboard content is absent', a
 
 test('Challenge is playable and Progress does not show unrecorded metrics', async ({ page }) => {
   await page.goto('/')
+  await page.getByRole('button', { name: 'START' }).click()
+  await page.getByRole('button', { name: /Skeleton/ }).click()
   await page.getByRole('button', { name: 'Challenge', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Learn the bones of the skull' })).toBeVisible()
   await expect(page.locator('.challenge-intro')).toContainText('14 cranial and facial bone names')
@@ -39,6 +57,8 @@ test('Challenge is playable and Progress does not show unrecorded metrics', asyn
 test('reference search, details visibility, and Help respond at desktop widths', async ({ page }) => {
   await page.setViewportSize({ width: 896, height: 900 })
   await page.goto('/')
+  await page.getByRole('button', { name: 'START' }).click()
+  await page.getByRole('button', { name: /Skeleton/ }).click()
   await expect(page.locator('.model-stage')).toHaveAttribute('data-model-ready', 'true')
 
   const hidePanel = page.getByRole('button', { name: 'Hide panel' })
@@ -79,6 +99,8 @@ test('filters reflect only catalog anatomy and mobile navigation remains usable 
 
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
+  await page.getByRole('button', { name: 'START' }).click()
+  await page.getByRole('button', { name: /Skeleton/ }).click()
   await expect(page.locator('.model-stage')).toHaveAttribute('data-model-ready', 'true')
   await expect(page.getByLabel('System filter').locator('option')).toHaveText(['All systems', 'Bone and joints'])
   await expect(page.getByLabel('Region filter').locator('option')).toHaveText([
@@ -105,6 +127,8 @@ test('keeps keyboard focus visible and honors reduced-motion preferences', async
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/')
+  await page.getByRole('button', { name: 'START' }).click()
+  await page.getByRole('button', { name: /Skeleton/ }).click()
 
   const atlas = page.getByRole('button', { name: 'Atlas', exact: true })
   await page.keyboard.press('Tab')
@@ -120,6 +144,8 @@ test('announces the deferred viewport while its module is loading', async ({ pag
   })
 
   await page.goto('/')
+  await page.getByRole('button', { name: 'START' }).click()
+  await page.getByRole('button', { name: /Skeleton/ }).click()
   await expect(page.locator('.viewport-loading')).toContainText('Preparing the anatomy viewer')
   await expect(page.locator('.model-stage')).toHaveAttribute('data-model-ready', 'true')
 })
